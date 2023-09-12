@@ -1,0 +1,81 @@
+query AppByClientIdQuery($clientId: String!) {
+  appByClientId(clientId: $clientId) {
+    id
+    name
+    type
+    organization {
+      id
+      name
+    }
+    appUrl
+    installUrl
+    authorName
+    authorHomepageUrl
+    redirectUris
+    clientId
+    clientSecret
+  }
+}
+
+query AppByIdQuery($id: Int!) {
+  app(id: $id) {
+    id
+    name
+    type
+    appUrl
+    installUrl
+    authorName
+    authorHomepageUrl
+    redirectUris
+    clientId
+    clientSecret
+  }
+}
+
+query AppSearchQuery {
+  apps {
+    edges {
+      node {
+        id
+        name
+        type
+        appUrl
+        installUrl
+        authorName
+        authorHomepageUrl
+        redirectUris
+        clientId
+        clientSecret
+      }
+    }
+  }
+}
+
+# @genqlient(for: "AppInput.logoId", omitempty: true)
+mutation AppCreateMutation(
+  $input: AppInput!
+  ) {
+  appCreate(data: $input) {
+    app {
+      id
+      name
+      type
+      appUrl
+      installUrl
+      authorName
+      authorHomepageUrl
+      redirectUris
+      clientId
+      clientSecret
+    }
+  }
+}
+
+mutation RedirectUriMutation($id: Int!, $redirectUris: String!) {
+  appUpdateRedirectUris(id: $id, redirectUris: $redirectUris) {
+    app {
+      id
+      redirectUris
+    }
+  }
+}

@@ -1,0 +1,10 @@
+query OrganizationSearch {
+  organizations {
+    edges {
+      node {
+        id
+        name
+      }
+    }
+  }
+}

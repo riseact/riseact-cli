@@ -1,0 +1,250 @@
+package app
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"os"
+	"riseact/internal/gql"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/joho/godotenv"
+	"golang.ngrok.com/ngrok"
+	"golang.org/x/net/websocket"
+)
+
+func StartDevEnvironment() error {
+	fmt.Println("Starting dev environment...")
+	var app *Application
+
+	// start ngrok tunnel
+	tun, err := startNgrokTunnel()
+
+	if err != nil {
+		return err
+	}
+
+	// initialize new app
+	if app == nil {
+		newApp, err := initializeApp(tun.URL())
+
+		if err != nil {
+			return err
+		}
+
+		app = newApp
+	}
+
+	// print infos
+	fmt.Println("App url:", tun.URL())
+
+	// start reverse proxy server
+	go launchReverseProxyServer(&tun)
+
+	// start web app
+	err = execCommand(".", "npm", "run", "dev")
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func launchReverseProxyServer(tun *ngrok.Tunnel) {
+	targetURL, _ := url.Parse("http://localhost:3000")
+	websocketURL, _ := url.Parse("http://localhost:3001")
+
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
+
+	reverseProxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Upgrade") == "websocket" && r.URL.Path == "/socket" {
+			proxyWebSocket(w, r, websocketURL)
+		} else {
+			proxy.ServeHTTP(w, r)
+		}
+	})
+
+	http.Handle("/socket", websocket.Handler(func(ws *websocket.Conn) {
+		defer ws.Close()
+
+		backendWS, err := websocket.Dial(websocketURL.String(), "", "http://localhost/")
+
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		defer backendWS.Close()
+	}))
+
+	http.Serve(*tun, reverseProxy)
+}
+
+func proxyWebSocket(w http.ResponseWriter, r *http.Request, target *url.URL) {
+	director := func(req *http.Request) {
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.Header.Set("Host", target.Host)
+	}
+
+	proxy := &httputil.ReverseProxy{
+		Director: director,
+	}
+
+	proxy.ServeHTTP(w, r)
+}
+
+func initializeApp(host string) (*Application, error) {
+	var newApp *Application
+
+	redirectUri := fmt.Sprintf("%s/auth/callback", host)
+
+	appEnv := readAppEnv()
+	appEnv.RedirectUri = redirectUri
+
+	// retrieve app by client_id
+	if appEnv.ClientId != "" {
+		app, _ := getAppByClientId(appEnv.ClientId)
+		if app != nil {
+			fmt.Printf("Existing App: %v\n", app.Name)
+			// update app redirect_uri with ngrok url
+			fmt.Printf("Updating app redirect_uri to %s\n", appEnv.RedirectUri)
+			storeAppEnv(appEnv)
+			updateAppRedirectUri(app, redirectUri)
+			return app, nil
+		}
+	}
+
+	fmt.Println("App not configured, do you want to create a new one or link to an existing one?")
+
+	create := false
+
+	prompt := &survey.Confirm{
+		Message: "Create a new app?",
+	}
+	survey.AskOne(prompt, &create)
+
+	fmt.Println("No app found, creating a new one...")
+	if create {
+		// create new app
+		fmt.Println("Creating a new app...")
+
+		app, err := createAppForm()
+
+		if err != nil {
+			return nil, err
+		}
+
+		storeAppEnv(&AppEnv{
+			ClientId:     app.ClientId,
+			ClientSecret: app.ClientSecret,
+		})
+
+		newApp = app
+
+	} else {
+		// link existing app
+		partnerApps, err := getApps()
+
+		if err != nil {
+			return nil, err
+		}
+
+		var appIds []string
+		var apps map[string]*Application = make(map[string]*Application)
+
+		for i, _ := range partnerApps {
+			appIds = append(appIds, partnerApps[i].ClientId)
+			apps[partnerApps[i].ClientId] = &partnerApps[i]
+		}
+		prompt := &survey.Select{
+			Message: "Select an app",
+			Options: appIds,
+			Description: func(id string, index int) string {
+				return apps[id].Name
+			},
+		}
+
+		survey.AskOne(prompt, &appEnv.ClientId)
+
+		newApp = apps[appEnv.ClientId]
+	}
+
+	appEnv.ClientId = newApp.ClientId
+	appEnv.ClientSecret = newApp.ClientSecret
+
+	storeAppEnv(appEnv)
+
+	updateAppRedirectUri(newApp, redirectUri)
+
+	fmt.Println("App configured successfully " + appEnv.ClientId)
+
+	return newApp, nil
+}
+
+func createAppForm() (*Application, error) {
+	var name string
+
+	namePrompt := &survey.Input{
+		Message: "App name",
+	}
+	survey.AskOne(namePrompt, &name)
+
+	typePrompt := &survey.Select{
+		Message: "Select an app type",
+		Options: []string{"PUBLIC", "PRIVATE"},
+	}
+
+	var appTypeAnswer string
+
+	survey.AskOne(typePrompt, &appTypeAnswer)
+
+	// TODO: ask other basic questions
+
+	fmt.Println("Creating app " + name + " of type " + appTypeAnswer)
+
+	appType := gql.ApplicationType(appTypeAnswer)
+
+	return createApp(gql.AppInput{
+		Name:         name,
+		Type:         appType,
+		RedirectUris: "",
+	})
+}
+
+func readAppEnv() *AppEnv {
+	err := godotenv.Load()
+
+	if err != nil {
+		return &AppEnv{}
+	}
+
+	return &AppEnv{
+		DatabaseUrl:   os.Getenv("DATABASE_URL"),
+		SessionSecret: os.Getenv("SESSION_SECRET"),
+		ClientId:      os.Getenv("CLIENT_ID"),
+		ClientSecret:  os.Getenv("CLIENT_SECRET"),
+		RedirectUri:   os.Getenv("REDIRECT_URI"),
+	}
+}
+
+func storeAppEnv(appEnv *AppEnv) error {
+
+	data := map[string]string{
+		"DATABASE_URL":   appEnv.DatabaseUrl,
+		"SESSION_SECRET": appEnv.SessionSecret,
+		"CLIENT_ID":      appEnv.ClientId,
+		"CLIENT_SECRET":  appEnv.ClientSecret,
+		"REDIRECT_URI":   appEnv.RedirectUri,
+	}
+
+	err := godotenv.Write(data, ".env")
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -1,0 +1,12 @@
+# Default genqlient config; for full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+schema: ./internal/gql/schema.graphql
+operations:
+- "internal/*/genqlient.graphql"
+generated: internal/gql/generated.go
+package: gql
+
+
+bindings:
+  DateTime:
+    type: time.Time

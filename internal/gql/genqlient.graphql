@@ -1,0 +1,6 @@
+query GetPartner {
+  partner {
+    id
+    name
+  }
+}

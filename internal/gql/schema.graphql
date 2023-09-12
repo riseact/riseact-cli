@@ -1,0 +1,427 @@
+input AppInput {
+  name: String
+  logoId: Int = null
+  type: ApplicationType
+  redirectUris: String!
+  organization: Int
+  appUrl: String
+  installUrl: String
+  authorHomepageUrl: String
+  description: String
+}
+
+type AppWebhook {
+  id: Int!
+  topics: [EventTopic!]!
+  url: String!
+}
+
+input AppWebhookInput {
+  topics: [EventTopic!]!
+  url: String!
+  appId: Int!
+}
+
+type Application {
+  id: Int!
+  name: String!
+  description: String
+  type: ApplicationType!
+  organizationId: Int
+  appUrl: String
+  installUrl: String
+  authorName: String
+  authorHomepageUrl: String
+  redirectUris: String
+  clientId: String!
+  clientSecret: String!
+  createDate: String!
+  updateDate: String!
+  logo: Media
+  organization: Organization
+}
+
+type ApplicationConnection {
+  pageInfo: PageInfo!
+  edges: [ApplicationEdge!]!
+}
+
+type ApplicationEdge {
+  cursor: String!
+  node: Application!
+}
+
+type ApplicationResponse {
+  userErrors: [UserError!]
+  app: Application
+}
+
+enum ApplicationType {
+  PUBLIC
+  PRIVATE
+}
+
+type ApplicationWebhookResponse {
+  userErrors: [UserError!]
+  webhook: AppWebhook
+}
+
+input AppsFiltersInput {
+  q: String = null
+}
+
+type Asset {
+  id: Int!
+  key: String!
+  checksum: String!
+  contentType: String!
+  type: AssetType
+  value: String
+  attachment: String
+  size: Int!
+  updatedAt: String!
+  createdAt: String!
+}
+
+input AssetInput {
+  key: String!
+  themeId: Int!
+  contentType: String!
+  value: String
+  attachment: String
+}
+
+enum AssetType {
+  ASSET
+  LAYOUT
+  TEMPLATE
+  SNIPPET
+  CONFIG
+  SECTION
+  MANIFEST
+}
+
+type Country {
+  name: String!
+  code: String!
+}
+
+input CountryFilters {
+  q: String = null
+}
+
+type CountryResponse {
+  results: [Country!]!
+}
+
+enum Currencies {
+  EUR
+  USD
+  GBP
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+enum ErrorCode {
+  BAD_INPUT
+  NOT_FOUND
+  NOT_UNIQUE
+  PROTECTED
+}
+
+enum EventTopic {
+  SUPPORTER_CREATED
+  SUPPORTER_UPDATED
+  SUPPORTER_DELETED
+  CHECKOUT_CREATED
+  CHECKOUT_UPDATED
+  CHECKOUT_CLOSED
+  DONATION_CREATED
+  DONATION_UPDATED
+  PAYMENT_CREATED
+  PAYMENT_UPDATED
+  CAMPAIGN_CREATED
+  CAMPAIGN_UPDATED
+  CAMPAIGN_DELETED
+  TOTEM_REGISTERED
+}
+
+type Media {
+  id: Int!
+  name: String!
+  url: String!
+  height: Int!
+  width: Int!
+  size: Int!
+  createDate: String!
+  alt: String!
+  square: String!
+  small: String!
+  medium: String!
+}
+
+type MediaConnection {
+  pageInfo: PageInfo!
+  edges: [MediaEdge!]!
+}
+
+type MediaEdge {
+  cursor: String!
+  node: Media!
+}
+
+type Mutation {
+  partnerUpdate(data: PartnerInput!): Partner!
+  organizationCreate(data: OrganizationInput!): Organization!
+  organizationUpdate(id: Int!, data: OrganizationInput!): Organization!
+  organizationDelete(id: Int!): Organization!
+  appCreate(data: AppInput!): ApplicationResponse!
+  appUpdate(id: Int!, data: AppInput!): ApplicationResponse!
+  appDelete(id: Int!): ApplicationResponse!
+  appUpdateRedirectUris(id: Int!, redirectUris: String!): ApplicationResponse!
+  appWebhooksCreate(data: AppWebhookInput!): ApplicationWebhookResponse!
+  appWebhooksUpdate(id: Int!, data: AppWebhookInput!): ApplicationWebhookResponse!
+  appWebhooksDelete(id: Int!): ApplicationWebhookResponse!
+  themeCreate(data: ThemeInput!): Theme!
+  themeUpload(file: Upload!): Theme!
+  themeDelete(id: Int!): Theme!
+  themePreview(themeId: Int!, organizationId: Int!): ThemePreview!
+  assetCreate(data: AssetInput!): Asset!
+  assetUpdate(themeId: Int!, data: AssetInput!): Asset!
+  assetDelete(themeId: Int!, key: String!): Asset!
+  mediaCreate(file: Upload!): Media!
+  partnerStaffInviteCreate(data: PartnerStaffInviteInput!): PartnerStaffInvite!
+  partnerStaffInviteCancel(inviteId: Int!): PartnerStaffInvite!
+}
+
+type Organization {
+  id: Int!
+  name: String!
+  domain: String!
+  createDate: DateTime!
+  updateDate: DateTime!
+  contactEmail: String
+  senderEmail: String
+  legalName: String
+  contactPhone: String
+  addressLine1: String
+  addressLine2: String
+  city: String
+  state: String
+  postalCode: String
+  country: Country
+  owner: User!
+  sitefrontUrl: String
+}
+
+type OrganizationConnection {
+  pageInfo: PageInfo!
+  edges: [OrganizationEdge!]!
+}
+
+type OrganizationEdge {
+  cursor: String!
+  node: Organization!
+}
+
+input OrganizationFiltersInput {
+  q: String = null
+}
+
+input OrganizationInput {
+  name: String!
+  domain: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+  total: Int!
+}
+
+input PaginationInput {
+  first: Int = null
+  last: Int = null
+  after: String = null
+  before: String = null
+}
+
+type Partner {
+  id: Int!
+  name: String!
+  currency: Currencies!
+  contactEmail: String
+  senderEmail: String
+  legalName: String
+  contactPhone: String
+  addressLine1: String
+  addressLine2: String
+  city: String
+  state: String
+  postalCode: String
+  country: String
+  webSite: String
+  supportEmail: String
+  developerEmail: String
+  developerPhone: String
+  vat: String
+  logo: Media
+}
+
+input PartnerInput {
+  name: String!
+  logo: Int = null
+  legalName: String = null
+  currency: Currencies = EUR
+  senderEmail: String = null
+  contactEmail: String = null
+  contactPhone: String = null
+  addressLine1: String = null
+  addressLine2: String = null
+  city: String = null
+  state: String = null
+  country: String = null
+  postalCode: String = null
+  webSite: String = null
+  supportEmail: String = null
+  developerEmail: String = null
+  developerPhone: String = null
+  vat: String = null
+}
+
+type PartnerStaff {
+  id: Int!
+  userId: Int!
+  name: String!
+  email: String!
+  createDate: String
+  role: PartnerStaffRole!
+  isOwner: Boolean!
+}
+
+input PartnerStaffFiltersInput {
+  role: PartnerStaffRole!
+}
+
+enum PartnerStaffInvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
+type PartnerStaffInvite {
+  id: Int!
+  email: String!
+  role: PartnerStaffRole!
+  status: PartnerStaffInvitationStatus!
+  sentDate: DateTime
+}
+
+input PartnerStaffInviteFiltersInput {
+  status: PartnerStaffInvitationStatus!
+  role: PartnerStaffRole!
+}
+
+input PartnerStaffInviteInput {
+  email: String!
+  role: PartnerStaffRole!
+}
+
+enum PartnerStaffRole {
+  ADMIN
+  USER
+}
+
+type Query {
+  partner: Partner!
+  owner: PartnerStaff!
+  organizations(pagination: PaginationInput = null, filters: OrganizationFiltersInput = null): OrganizationConnection!
+  organization(id: Int!): Organization!
+  staffs(filters: PartnerStaffFiltersInput = null): [PartnerStaff!]!
+  staff(id: Int!): PartnerStaff!
+  user: PartnerStaff!
+  staffInvites(filters: PartnerStaffInviteFiltersInput = null): [PartnerStaffInvite!]!
+  apps(pagination: PaginationInput = null, filters: AppsFiltersInput = null): ApplicationConnection!
+  app(id: Int!): Application!
+  appByClientId(clientId: String!): Application!
+  appWebhooks(appId: Int!): [Webhook!]!
+  themes(pagination: PaginationInput = null, filters: ThemesFilters = null): ThemeConnection!
+  theme(id: Int!): Theme!
+  media(pagination: PaginationInput = null): MediaConnection!
+  unsplash(query: String!, page: Int! = 1, perPage: Int! = 10): UnsplashResults!
+  countries(filters: CountryFilters = null): CountryResponse!
+}
+
+type Theme {
+  id: Int!
+  name: String!
+  uuid: String!
+}
+
+type ThemeConnection {
+  pageInfo: PageInfo!
+  edges: [ThemeEdge!]!
+}
+
+type ThemeEdge {
+  cursor: String!
+  node: Theme!
+}
+
+input ThemeInput {
+  name: String!
+}
+
+type ThemePreview {
+  id: Int!
+  uuid: String!
+  organizationId: Int!
+  previewUrl: String!
+  adminUrl: String!
+}
+
+input ThemesFilters {
+  q: String = null
+}
+
+type UnsplashPhoto {
+  id: String!
+  description: String
+  raw: String!
+  full: String!
+  regular: String!
+  small: String!
+  thumb: String!
+  downloadLink: String!
+}
+
+type UnsplashResults {
+  page: Int!
+  total: Int!
+  totalPages: Int!
+  results: [UnsplashPhoto!]!
+}
+
+scalar Upload
+
+type User {
+  id: Int!
+  email: String!
+  name: String
+}
+
+type UserError {
+  code: ErrorCode!
+  field: String
+  message: String
+}
+
+type Webhook {
+  id: Int!
+  topics: [EventTopic!]!
+  url: String!
+}

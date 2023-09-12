@@ -1,0 +1,58 @@
+query ThemeList {
+  themes {
+    edges {
+			node {
+        id
+        name
+      }
+    }
+  }
+}
+
+mutation ThemeDelete($id: Int!) {
+  themeDelete(id: $id) {
+    id
+  }
+}
+
+mutation ThemePreview($themeId: Int!, $organizationId: Int!) {
+  themePreview(themeId: $themeId, organizationId: $organizationId) {
+    id
+    previewUrl
+    adminUrl
+  }
+}
+
+mutation AssetCreate($input: AssetInput!) {
+  assetCreate(data: $input) {
+    id
+    key
+    checksum
+    contentType
+    value
+    attachment
+    size
+    updatedAt
+    createdAt
+  }
+}
+
+mutation AssetUpdate($themeId: Int!, $input: AssetInput!) {
+  assetUpdate(themeId: $themeId, data: $input) {
+    id
+    key
+    checksum
+    contentType
+    value
+    attachment
+    size
+    updatedAt
+    createdAt
+  }
+}
+
+mutation AssetDelete($themeId: Int!, $key: String!) {
+  assetDelete(themeId: $themeId, key: $key) {
+    id
+  }
+}
