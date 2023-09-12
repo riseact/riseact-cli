@@ -14,7 +14,9 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - main: ./cmd/main.go
+    binary: riseact
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
