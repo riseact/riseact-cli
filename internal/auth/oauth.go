@@ -56,6 +56,8 @@ func generateAuthorizationURL() (string, string) {
 		"code_challenge_method": {"S256"},
 	}
 
+	logger.Debugf("Authorization URL: %s", fmt.Sprintf("%s", baseUrl))
+
 	return fmt.Sprintf("%s?%s", baseUrl, values.Encode()), code_verifier
 }
 

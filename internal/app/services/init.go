@@ -1,9 +1,9 @@
-package app
+package services
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"riseact/internal/app"
 	"riseact/internal/utils/git"
 	"riseact/internal/utils/stringutils"
 
@@ -82,7 +82,6 @@ func appDataForm() *AppData {
 }
 
 func appCloneTemplate(appData *AppData) error {
-
 	var repo string
 
 	switch appData.template {
@@ -105,17 +104,9 @@ func appCloneTemplate(appData *AppData) error {
 		return err
 	}
 
-	return nil
-}
+	// move .env.example to .env
+	err = os.Rename(fmt.Sprintf("%s/.env.example", appData.path), fmt.Sprintf("%s/.env", appData.path))
 
-func execCommand(path string, name string, arg ...string) error {
-	cmd := exec.Command(name, arg...)
-	cmd.Dir = path
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err := cmd.Run()
 	if err != nil {
 		return err
 	}
@@ -135,20 +126,20 @@ func appInstallDependencies(appData *AppData) error {
 }
 
 func appInstallRemixDependencies(appData *AppData) error {
-	err := execCommand(appData.path, "npm", "install")
+	err := app.ExecCommand(appData.path, "npm", "install")
 
 	return err
 }
 
 func appInstallNodeDependencies(appData *AppData) error {
 
-	err := execCommand(appData.path, "npm", "install")
+	err := app.ExecCommand(appData.path, "npm", "install")
 
 	if err != nil {
 		return err
 	}
 
-	err = execCommand(appData.path+"/src/frontend", "npm", "run", "build")
+	err = app.ExecCommand(appData.path+"/src/frontend", "npm", "run", "build")
 
 	if err != nil {
 		return err

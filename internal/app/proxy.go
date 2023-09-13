@@ -44,7 +44,7 @@ func (rp *ReverseProxy) Launch() {
 
 	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 
-	reverseProxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Upgrade") == "websocket" && r.URL.Path == "/socket" {
 			rp.ProxyWebSocket(w, r, websocketURL)
 		} else {
@@ -64,5 +64,5 @@ func (rp *ReverseProxy) Launch() {
 		defer backendWS.Close()
 	}))
 
-	http.Serve(*rp.tunnel, reverseProxy)
+	http.Serve(*rp.tunnel, handler)
 }

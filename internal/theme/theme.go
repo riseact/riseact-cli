@@ -212,14 +212,12 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 
 	logger.Debug("Uploading file: " + filename)
 
-	// Apre il file per la lettura
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	// Prepara un nuovo form multipart
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 	fw, err := w.CreateFormFile("file", filename)
@@ -227,7 +225,6 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 		return nil, err
 	}
 
-	// Copia i dati del file nel form
 	if _, err = io.Copy(fw, file); err != nil {
 		return nil, err
 	}
@@ -238,7 +235,6 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 
 	w.Close()
 
-	// Crea la richiesta HTTP con l'header di autorizzazione "Bearer"
 	req, err := http.NewRequest("POST", url, &b)
 	if err != nil {
 		return nil, err
@@ -246,7 +242,6 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 	req.Header.Set("Content-Type", w.FormDataContentType())
 	req.Header.Set("Authorization", "Bearer "+settings.AccessToken)
 
-	// Esegue la richiesta
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -254,11 +249,11 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 	defer resp.Body.Close()
 
 	var themeResp ThemeUploadResponse
+
 	if err := json.NewDecoder(resp.Body).Decode(&themeResp); err != nil {
 		return nil, err
 	}
 
-	// Controlla il codice di stato della risposta
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("upload fallito: %s", resp.Status)
 	}
@@ -267,6 +262,9 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 }
 
 func themeAssetChanged(themeId int, e watcher.FileEvent) error {
+	// TODO: handle file move
+	// case e.Action == watcher.FileMove:
+	// 	_ := NewThemeAsset(e.FileName, themeId)
 	switch {
 	case e.Action == watcher.FileCreate:
 		asset := NewThemeAsset(e.FileName, themeId)
@@ -287,8 +285,6 @@ func themeAssetChanged(themeId int, e watcher.FileEvent) error {
 			logger.Errorf("Error deleting asset: %s", err.Error())
 		}
 
-		// case e.Action == "move":
-		// 	_ := NewThemeAsset(e.FileName, themeId)
 	}
 
 	return nil

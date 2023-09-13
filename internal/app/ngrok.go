@@ -10,6 +10,26 @@ import (
 	ngrokConfig "golang.ngrok.com/ngrok/config"
 )
 
+func StartNgrokTunnel() (ngrok.Tunnel, error) {
+	settings, err := config.GetUserSettings()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// check ngrok configuration
+	if err = ensureNgrokSetup(); err != nil {
+		return nil, err
+	}
+
+	tun, err := ngrok.Listen(context.Background(),
+		ngrokConfig.HTTPEndpoint(),
+		ngrok.WithAuthtoken(settings.NgrokToken),
+	)
+
+	return tun, nil
+}
+
 func ensureNgrokSetup() error {
 	settings, err := config.GetUserSettings()
 
@@ -36,24 +56,4 @@ func ensureNgrokSetup() error {
 	}
 
 	return nil
-}
-
-func startNgrokTunnel() (ngrok.Tunnel, error) {
-	settings, err := config.GetUserSettings()
-
-	if err != nil {
-		return nil, err
-	}
-
-	// check ngrok configuration
-	if err = ensureNgrokSetup(); err != nil {
-		return nil, err
-	}
-
-	tun, err := ngrok.Listen(context.Background(),
-		ngrokConfig.HTTPEndpoint(),
-		ngrok.WithAuthtoken(settings.NgrokToken),
-	)
-
-	return tun, nil
 }

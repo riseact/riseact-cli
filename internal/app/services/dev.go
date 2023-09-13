@@ -1,8 +1,10 @@
-package app
+package services
 
 import (
 	"fmt"
 	"os"
+	"riseact/internal/app"
+	"riseact/internal/config"
 	"riseact/internal/gql"
 	"riseact/internal/utils/logger"
 
@@ -11,18 +13,21 @@ import (
 
 func StartDevEnvironment() error {
 	logger.Debug("Starting dev environment...")
-	var app *Application
+
+	var a *app.Application
+
+	settings := config.GetAppSettings()
 
 	// start ngrok tunnel
-	tun, err := startNgrokTunnel()
+	tun, err := app.StartNgrokTunnel()
 
 	if err != nil {
 		return err
 	}
 
 	// initialize app
-	if app == nil {
-		app, err = initApp(tun.URL())
+	if a == nil {
+		a, err = initApp(tun.URL())
 
 		if err != nil {
 			logger.Debugf("Error initializing app: %s", err.Error())
@@ -35,15 +40,17 @@ func StartDevEnvironment() error {
 	logger.Infof("App url: %s", tun.URL())
 	logger.Info("")
 
-	proxy := NewReverseProxy(&tun, "http://localhost:3000", "http://localhost:3001")
+	proxy := app.NewReverseProxy(&tun, "http://localhost:3000", "http://localhost:3001")
 
+	// FIXME: this is a hack, it should already be set in app env
 	os.Setenv("RISEACT_APP_URL", tun.URL())
+	os.Setenv("ACCOUNTS_HOST", settings.AccountsHost)
 
 	// start reverse proxy server
 	go proxy.Launch()
 
 	// start web app
-	err = app.launch()
+	err = a.Launch()
 
 	if err != nil {
 		return err
@@ -52,12 +59,12 @@ func StartDevEnvironment() error {
 	return nil
 }
 
-func initApp(host string) (*Application, error) {
-	var app *Application
+func initApp(host string) (*app.Application, error) {
+	var a *app.Application
 
 	redirectUri := fmt.Sprintf("%s/auth/callback", host)
 
-	appEnv, err := LoadEnv()
+	appEnv, err := app.LoadEnv()
 
 	if err != nil {
 		return nil, fmt.Errorf("Error loading app env: %s", err.Error())
@@ -65,7 +72,7 @@ func initApp(host string) (*Application, error) {
 
 	appEnv.RiseactAppUrl = host
 
-	err = IsValidApp(".")
+	err = app.IsValidApp(".")
 
 	if err != nil {
 		return nil, err
@@ -73,13 +80,13 @@ func initApp(host string) (*Application, error) {
 
 	// retrieve app by client_id
 	if appEnv.ClientId != "" {
-		app, _ = GetAppByClientId(appEnv.ClientId)
-		if app != nil {
-			logger.Debugf("Existing App: %v\n", app.Name)
+		a, _ = app.GetAppByClientId(appEnv.ClientId)
+		if a != nil {
+			logger.Debugf("Existing App: %v\n", a.Name)
 			// update app redirect_uri with ngrok url
-			appEnv.store()
-			app.updateAppRedirectUri(redirectUri)
-			return app, nil
+			appEnv.Store()
+			a.UpdateAppRedirectUri(redirectUri)
+			return a, nil
 		}
 	}
 
@@ -99,14 +106,14 @@ func initApp(host string) (*Application, error) {
 			return nil, err
 		}
 
-		app, err = NewApp(appData)
+		a, err = app.NewApp(appData)
 
 		if err != nil {
 			return nil, err
 		}
 
 	} else {
-		app, err = selectExistingApp(appEnv)
+		a, err = selectExistingApp(appEnv)
 
 		if err != nil {
 			return nil, err
@@ -114,31 +121,32 @@ func initApp(host string) (*Application, error) {
 
 	}
 
-	appEnv.ClientId = app.ClientId
-	appEnv.ClientSecret = app.ClientSecret
+	appEnv.ClientId = a.ClientId
+	appEnv.ClientSecret = a.ClientSecret
 
-	appEnv.store()
-	app.updateAppRedirectUri(redirectUri)
+	appEnv.Store()
+	a.UpdateAppRedirectUri(redirectUri)
 
 	logger.Infof("App configured successfully. Client ID: " + appEnv.ClientId)
 
-	return app, nil
+	return a, nil
 }
 
-func selectExistingApp(e *AppEnv) (*Application, error) {
-	partnerApps, err := GetApps()
+func selectExistingApp(e *app.AppEnv) (*app.Application, error) {
+	partnerApps, err := app.GetApps()
 
 	if err != nil {
 		return nil, err
 	}
 
 	var appIds []string
-	var apps map[string]*Application = make(map[string]*Application)
+	var apps map[string]*app.Application = make(map[string]*app.Application)
 
 	for i, _ := range partnerApps {
 		appIds = append(appIds, partnerApps[i].ClientId)
 		apps[partnerApps[i].ClientId] = &partnerApps[i]
 	}
+
 	prompt := &survey.Select{
 		Message: "Select an app",
 		Options: appIds,

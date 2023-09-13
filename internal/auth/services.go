@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-// Login is the login command
-
 func Login() error {
 	fmt.Println("Logging in...")
 
@@ -56,9 +54,8 @@ func Login() error {
 	return nil
 }
 
-// Logout is the logout command
-
 func Logout() {
+	// TODO: implement logout
 	fmt.Println("Logout")
 }
 

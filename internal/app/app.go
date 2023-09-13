@@ -20,6 +20,28 @@ type Application struct {
 	ClientSecret      string
 }
 
+func (a *Application) UpdateAppRedirectUri(redirectUri string) error {
+	graphqlClient, err := gql.GetClient()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = gql.RedirectUriMutation(context.Background(), *graphqlClient, a.Id, redirectUri)
+
+	if err != nil {
+		return err
+	}
+
+	a.RedirectUris = redirectUri
+
+	return nil
+}
+
+func (a *Application) Launch() error {
+	return ExecCommand(".", "npm", "run", "dev")
+}
+
 func NewApp(input gql.AppInput) (*Application, error) {
 	graphqlClient, err := gql.GetClient()
 
@@ -52,29 +74,15 @@ func IsValidApp(path string) error {
 		return &AppPackageJSONMissingError{Message: "package.json not found"}
 	}
 
-	return nil
-}
-
-func (a *Application) updateAppRedirectUri(redirectUri string) error {
-	graphqlClient, err := gql.GetClient()
-
-	if err != nil {
-		return err
-	}
-
-	_, err = gql.RedirectUriMutation(context.Background(), *graphqlClient, a.Id, redirectUri)
-
-	if err != nil {
-		return err
-	}
-
-	a.RedirectUris = redirectUri
+	// TODO
+	// check file and folder structure
+	// - layout: there is at least one theme.html file
+	// - templates: all basic templates are present
+	// - config: json files are valid
+	// - all: folder size is not too big
+	// - all: there are no files that are not allowed (?)
 
 	return nil
-}
-
-func (a *Application) launch() error {
-	return execCommand(".", "npm", "run", "dev")
 }
 
 func GetAppByClientId(clientId string) (*Application, error) {

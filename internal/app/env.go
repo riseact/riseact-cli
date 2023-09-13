@@ -32,7 +32,7 @@ func LoadEnv() (*AppEnv, error) {
 	return a, nil
 }
 
-func (a *AppEnv) store() error {
+func (a *AppEnv) Store() error {
 	data := map[string]string{
 		"DATABASE_URL":    a.DatabaseUrl,
 		"SESSION_SECRET":  a.SessionSecret,

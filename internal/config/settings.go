@@ -150,7 +150,6 @@ func LoadConfig() error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore since we have default values
 			fmt.Println("No configuration file loaded - using defaults")
 		} else {
 			panic("Error reading config file:" + err.Error())
