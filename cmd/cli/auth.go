@@ -15,9 +15,7 @@ var authLoginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Do login'",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := auth.Login()
-
-		if err != nil {
+		if err := auth.Login(); err != nil {
 			errorExit(err.Error())
 		}
 	},

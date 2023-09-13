@@ -21,9 +21,7 @@ var themeInitCmd = &cobra.Command{
 		logger.Info("Cloning remote theme repository...")
 		repo, _ := cmd.Flags().GetString("repository")
 
-		err := c.InitTheme(repo)
-
-		if err != nil {
+		if err := c.InitTheme(repo); err != nil {
 			errorExit(err.Error())
 		}
 
@@ -35,15 +33,13 @@ var themeDevCmd = &cobra.Command{
 	Use:   "dev",
 	Short: "Uploads the current theme to an organization so you can preview it.",
 	Run: func(cmd *cobra.Command, args []string) {
-		path, _ := cmd.Flags().GetString("path")
-
 		if err := auth.IsAuthenticated(); err != nil {
 			errorExit(err.Error())
 		}
 
-		err := c.StartDevEnvironment(path)
+		path, _ := cmd.Flags().GetString("path")
 
-		if err != nil {
+		if err := c.StartDevEnvironment(path); err != nil {
 			errorExit(err.Error())
 		}
 	},
@@ -68,15 +64,33 @@ var themePushCmd = &cobra.Command{
 	},
 }
 
+var themePullCmd = &cobra.Command{
+	Use:   "pull",
+	Short: "Download theme files from your Partner area.",
+	Run: func(cmd *cobra.Command, args []string) {
+		logger.Info("Push theme")
+		if err := auth.IsAuthenticated(); err != nil {
+			errorExit(err.Error())
+		}
+
+		path, _ := cmd.Flags().GetString("path")
+
+		logger.Debug("Pull theme path: " + path)
+
+		if err := c.Pull(path); err != nil {
+			errorExit(err.Error())
+		}
+	},
+}
+
 var themePackageCmd = &cobra.Command{
 	Use:   "package",
 	Short: "Creates a zip file of your theme that you can use to upload to Riseact.",
 	Run: func(cmd *cobra.Command, args []string) {
 		logger.Info("Package theme")
 		path, _ := cmd.Flags().GetString("path")
-		_, err := c.PackageCreate(path, ".")
 
-		if err != nil {
+		if _, err := c.PackageCreate(path, "."); err != nil {
 			errorExit(err.Error())
 		}
 
@@ -94,6 +108,9 @@ func init() {
 
 	themePushCmd.Flags().StringP("path", "p", ".", "Theme path")
 	themeCmd.AddCommand(themePushCmd)
+
+	themePullCmd.Flags().StringP("path", "p", ".", "Theme path")
+	themeCmd.AddCommand(themePullCmd)
 
 	themePackageCmd.Flags().StringP("path", "p", ".", "Theme path")
 	themeCmd.AddCommand(themePackageCmd)

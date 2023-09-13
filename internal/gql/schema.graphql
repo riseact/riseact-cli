@@ -8,6 +8,7 @@ input AppInput {
   installUrl: String
   authorHomepageUrl: String
   description: String
+  isEmbedded: Boolean
 }
 
 type AppWebhook {
@@ -37,8 +38,10 @@ type Application {
   clientSecret: String!
   createDate: String!
   updateDate: String!
+  isEmbedded: Boolean!
   logo: Media
   organization: Organization
+  totalInstallations: Int!
 }
 
 type ApplicationConnection {
@@ -99,6 +102,13 @@ enum AssetType {
   CONFIG
   SECTION
   MANIFEST
+}
+
+enum BillingPlanType {
+  DEVELOPMENT
+  HERO
+  TEAM
+  GROW
 }
 
 type Country {
@@ -184,9 +194,11 @@ type Mutation {
   appWebhooksUpdate(id: Int!, data: AppWebhookInput!): ApplicationWebhookResponse!
   appWebhooksDelete(id: Int!): ApplicationWebhookResponse!
   themeCreate(data: ThemeInput!): Theme!
+  themeUpdate(themeId: Int!, data: ThemeUpdateInput!): Theme!
   themeUpload(file: Upload!): Theme!
   themeDelete(id: Int!): Theme!
   themePreview(themeId: Int!, organizationId: Int!): ThemePreview!
+  themeApprovalRequest(id: Int!): Theme!
   assetCreate(data: AssetInput!): Asset!
   assetUpdate(themeId: Int!, data: AssetInput!): Asset!
   assetDelete(themeId: Int!, key: String!): Asset!
@@ -211,6 +223,7 @@ type Organization {
   state: String
   postalCode: String
   country: Country
+  planType: BillingPlanType
   owner: User!
   sitefrontUrl: String
 }
@@ -232,6 +245,7 @@ input OrganizationFiltersInput {
 input OrganizationInput {
   name: String!
   domain: String!
+  isDevelopment: Boolean!
 }
 
 type PageInfo {
@@ -352,14 +366,30 @@ type Query {
   themes(pagination: PaginationInput = null, filters: ThemesFilters = null): ThemeConnection!
   theme(id: Int!): Theme!
   media(pagination: PaginationInput = null): MediaConnection!
+  mediaSingle(id: Int!): Media!
   unsplash(query: String!, page: Int! = 1, perPage: Int! = 10): UnsplashResults!
   countries(filters: CountryFilters = null): CountryResponse!
+}
+
+enum StoreVisibility {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
 }
 
 type Theme {
   id: Int!
   name: String!
   uuid: String!
+  version: String!
+  documentationUrl: String
+  supportUrl: String
+  storeVisibility: StoreVisibility!
+  tagLine: String
+  desktopScreenshot: Media
+  mobileScreenshot: Media
+  totalInstallations: Int!
 }
 
 type ThemeConnection {
@@ -382,6 +412,15 @@ type ThemePreview {
   organizationId: Int!
   previewUrl: String!
   adminUrl: String!
+}
+
+input ThemeUpdateInput {
+  name: String
+  tagLine: String
+  documentationUrl: String
+  supportUrl: String
+  desktopScreenshotId: Int
+  mobileScreenshotId: Int
 }
 
 input ThemesFilters {

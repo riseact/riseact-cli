@@ -637,6 +637,7 @@ func (v *ThemeListThemesThemeConnectionEdgesThemeEdge) GetNode() ThemeListThemes
 type ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
+	Uuid string `json:"uuid"`
 }
 
 // GetId returns ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme.Id, and is useful for accessing the field via an interface.
@@ -644,6 +645,9 @@ func (v *ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme) GetId() int { re
 
 // GetName returns ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme.Name, and is useful for accessing the field via an interface.
 func (v *ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme) GetName() string { return v.Name }
+
+// GetUuid returns ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme.Uuid, and is useful for accessing the field via an interface.
+func (v *ThemeListThemesThemeConnectionEdgesThemeEdgeNodeTheme) GetUuid() string { return v.Uuid }
 
 // ThemePreviewResponse is returned by ThemePreview on success.
 type ThemePreviewResponse struct {
@@ -1215,6 +1219,7 @@ query ThemeList {
 			node {
 				id
 				name
+				uuid
 			}
 		}
 	}

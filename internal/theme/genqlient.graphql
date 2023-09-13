@@ -4,6 +4,7 @@ query ThemeList {
 			node {
         id
         name
+        uuid
       }
     }
   }

@@ -21,9 +21,7 @@ var appInitCmd = &cobra.Command{
 			errorExit(err.Error())
 		}
 
-		err := app.DoAppInit()
-
-		if err != nil {
+		if err := app.DoAppInit(); err != nil {
 			errorExit(err.Error())
 		}
 	},
@@ -37,9 +35,7 @@ var appStartDevelopmentCmd = &cobra.Command{
 			errorExit(err.Error())
 		}
 
-		err := app.StartDevEnvironment()
-
-		if err != nil {
+		if err := app.StartDevEnvironment(); err != nil {
 			errorExit(err.Error())
 		}
 

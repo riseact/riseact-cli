@@ -14,13 +14,11 @@ build:
 release: 
 	goreleaser release
 
-dev:
-	go run cmd/main.go auth login
-
 install:
 	${MAKE} build-linux
 	cp dist/riseact ~/.go/bin
 
 codegen: 
 	echo "Generating GraphQL client code..."
+	go get github.com/Khan/genqlient/generate@v0.6.0
 	go run github.com/Khan/genqlient 
