@@ -69,7 +69,7 @@ func IsAuthenticated() error {
 
 	// if is expired
 	if userSettings.AccessToken == "" || userSettings.ExpireAt == 0 {
-		return fmt.Errorf("Not authenticated")
+		return fmt.Errorf("Not authenticated. Login first with 'riseact auth login'")
 	}
 
 	// ExpiresAt < now
