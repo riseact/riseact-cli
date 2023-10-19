@@ -120,7 +120,7 @@ func (t *Theme) Upload(remoteThemeId *int) (int, error) {
 
 	// upload the zip file to the partner area with http multipart POST on https://core.riseact.com/partners/themes/upload
 
-	themeData, err := uploadFile(filename, remoteThemeId, appSettings.CoreHost+"/partners/themes/upload")
+	themeData, err := uploadFile(filename, remoteThemeId, appSettings.CoreHost+"/partners/themes/upload/")
 
 	if err != nil {
 		return -1, err
