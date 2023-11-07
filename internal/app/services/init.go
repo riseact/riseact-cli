@@ -132,18 +132,7 @@ func appInstallRemixDependencies(appData *AppData) error {
 }
 
 func appInstallNodeDependencies(appData *AppData) error {
-
 	err := app.ExecCommand(appData.path, "npm", "install")
 
-	if err != nil {
-		return err
-	}
-
-	err = app.ExecCommand(appData.path+"/src/frontend", "npm", "run", "build")
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
