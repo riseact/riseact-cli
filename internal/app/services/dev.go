@@ -7,6 +7,7 @@ import (
 	"riseact/internal/config"
 	"riseact/internal/gql"
 	"riseact/internal/utils/logger"
+	"riseact/internal/utils/osutils"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -36,9 +37,7 @@ func StartDevEnvironment() error {
 	}
 
 	// print infos
-	logger.Info("")
 	logger.Infof("App url: %s", tun.URL())
-	logger.Info("")
 
 	proxy := app.NewReverseProxy(&tun, "http://localhost:3000", "http://localhost:3001")
 
@@ -48,6 +47,12 @@ func StartDevEnvironment() error {
 
 	// start reverse proxy server
 	go proxy.Launch()
+
+	err = osutils.LaunchBrowser(tun.URL())
+
+	if err != nil {
+		return err
+	}
 
 	// start web app
 	err = a.Launch()
@@ -61,8 +66,6 @@ func StartDevEnvironment() error {
 
 func initApp(host string) (*app.Application, error) {
 	var a *app.Application
-
-	redirectUri := fmt.Sprintf("%s/auth/callback", host)
 
 	appEnv, err := app.LoadEnv()
 
@@ -85,7 +88,7 @@ func initApp(host string) (*app.Application, error) {
 			logger.Debugf("Existing App: %v\n", a.Name)
 			// update app redirect_uri with ngrok url
 			appEnv.Store()
-			a.UpdateAppRedirectUri(redirectUri)
+			a.UpdateAppUris(host)
 			return a, nil
 		}
 	}
@@ -125,7 +128,7 @@ func initApp(host string) (*app.Application, error) {
 	appEnv.ClientSecret = a.ClientSecret
 
 	appEnv.Store()
-	a.UpdateAppRedirectUri(redirectUri)
+	a.UpdateAppUris(host)
 
 	logger.Infof("App configured successfully. Client ID: " + appEnv.ClientId)
 

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"riseact/internal/gql"
@@ -20,14 +21,21 @@ type Application struct {
 	ClientSecret      string
 }
 
-func (a *Application) UpdateAppRedirectUri(redirectUri string) error {
+func (a *Application) UpdateAppUris(appUri string) error {
 	graphqlClient, err := gql.GetClient()
+
+	redirectUri := fmt.Sprintf("%s/oauth/callback", appUri)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = gql.RedirectUriMutation(context.Background(), *graphqlClient, a.Id, redirectUri)
+	data := &gql.AppInput{
+		RedirectUris: redirectUri,
+		AppUrl:       appUri,
+	}
+
+	_, err = gql.RedirectUriMutation(context.Background(), *graphqlClient, a.Id, *data)
 
 	if err != nil {
 		return err

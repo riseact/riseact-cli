@@ -3,7 +3,7 @@ input AppInput {
   logoId: Int = null
   type: ApplicationType
   redirectUris: String!
-  organization: Int
+  organizationId: Int
   appUrl: String
   installUrl: String
   authorHomepageUrl: String

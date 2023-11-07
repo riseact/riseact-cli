@@ -215,15 +215,16 @@ func (v *AppCreateMutationResponse) GetAppCreate() AppCreateMutationAppCreateApp
 }
 
 type AppInput struct {
-	Name              string          `json:"name"`
+	Name              string          `json:"name,omitempty"`
 	LogoId            int             `json:"logoId,omitempty"`
-	Type              ApplicationType `json:"type"`
+	Type              ApplicationType `json:"type,omitempty"`
 	RedirectUris      string          `json:"redirectUris"`
-	Organization      int             `json:"organization"`
-	AppUrl            string          `json:"appUrl"`
-	InstallUrl        string          `json:"installUrl"`
-	AuthorHomepageUrl string          `json:"authorHomepageUrl"`
-	Description       string          `json:"description"`
+	OrganizationId    int             `json:"organizationId,omitempty"`
+	AppUrl            string          `json:"appUrl,omitempty"`
+	InstallUrl        string          `json:"installUrl,omitempty"`
+	AuthorHomepageUrl string          `json:"authorHomepageUrl,omitempty"`
+	Description       string          `json:"description,omitempty"`
+	IsEmbedded        bool            `json:"isEmbedded,omitempty"`
 }
 
 // GetName returns AppInput.Name, and is useful for accessing the field via an interface.
@@ -238,8 +239,8 @@ func (v *AppInput) GetType() ApplicationType { return v.Type }
 // GetRedirectUris returns AppInput.RedirectUris, and is useful for accessing the field via an interface.
 func (v *AppInput) GetRedirectUris() string { return v.RedirectUris }
 
-// GetOrganization returns AppInput.Organization, and is useful for accessing the field via an interface.
-func (v *AppInput) GetOrganization() int { return v.Organization }
+// GetOrganizationId returns AppInput.OrganizationId, and is useful for accessing the field via an interface.
+func (v *AppInput) GetOrganizationId() int { return v.OrganizationId }
 
 // GetAppUrl returns AppInput.AppUrl, and is useful for accessing the field via an interface.
 func (v *AppInput) GetAppUrl() string { return v.AppUrl }
@@ -252,6 +253,9 @@ func (v *AppInput) GetAuthorHomepageUrl() string { return v.AuthorHomepageUrl }
 
 // GetDescription returns AppInput.Description, and is useful for accessing the field via an interface.
 func (v *AppInput) GetDescription() string { return v.Description }
+
+// GetIsEmbedded returns AppInput.IsEmbedded, and is useful for accessing the field via an interface.
+func (v *AppInput) GetIsEmbedded() bool { return v.IsEmbedded }
 
 // AppSearchQueryAppsApplicationConnection includes the requested fields of the GraphQL type ApplicationConnection.
 type AppSearchQueryAppsApplicationConnection struct {
@@ -487,6 +491,15 @@ type AssetUpdateResponse struct {
 // GetAssetUpdate returns AssetUpdateResponse.AssetUpdate, and is useful for accessing the field via an interface.
 func (v *AssetUpdateResponse) GetAssetUpdate() AssetUpdateAssetUpdateAsset { return v.AssetUpdate }
 
+type ErrorCode string
+
+const (
+	ErrorCodeBadInput  ErrorCode = "BAD_INPUT"
+	ErrorCodeNotFound  ErrorCode = "NOT_FOUND"
+	ErrorCodeNotUnique ErrorCode = "NOT_UNIQUE"
+	ErrorCodeProtected ErrorCode = "PROTECTED"
+)
+
 // GetPartnerPartner includes the requested fields of the GraphQL type Partner.
 type GetPartnerPartner struct {
 	Id   int    `json:"id"`
@@ -553,40 +566,60 @@ func (v *OrganizationSearchResponse) GetOrganizations() OrganizationSearchOrgani
 	return v.Organizations
 }
 
-// RedirectUriMutationAppUpdateRedirectUrisApplicationResponse includes the requested fields of the GraphQL type ApplicationResponse.
-type RedirectUriMutationAppUpdateRedirectUrisApplicationResponse struct {
-	App RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication `json:"app"`
+// RedirectUriMutationAppUpdateApplicationResponse includes the requested fields of the GraphQL type ApplicationResponse.
+type RedirectUriMutationAppUpdateApplicationResponse struct {
+	App        RedirectUriMutationAppUpdateApplicationResponseAppApplication        `json:"app"`
+	UserErrors []RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError `json:"userErrors"`
 }
 
-// GetApp returns RedirectUriMutationAppUpdateRedirectUrisApplicationResponse.App, and is useful for accessing the field via an interface.
-func (v *RedirectUriMutationAppUpdateRedirectUrisApplicationResponse) GetApp() RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication {
+// GetApp returns RedirectUriMutationAppUpdateApplicationResponse.App, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationAppUpdateApplicationResponse) GetApp() RedirectUriMutationAppUpdateApplicationResponseAppApplication {
 	return v.App
 }
 
-// RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication includes the requested fields of the GraphQL type Application.
-type RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication struct {
-	Id           int    `json:"id"`
-	RedirectUris string `json:"redirectUris"`
+// GetUserErrors returns RedirectUriMutationAppUpdateApplicationResponse.UserErrors, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationAppUpdateApplicationResponse) GetUserErrors() []RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError {
+	return v.UserErrors
 }
 
-// GetId returns RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication.Id, and is useful for accessing the field via an interface.
-func (v *RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication) GetId() int {
-	return v.Id
+// RedirectUriMutationAppUpdateApplicationResponseAppApplication includes the requested fields of the GraphQL type Application.
+type RedirectUriMutationAppUpdateApplicationResponseAppApplication struct {
+	Id int `json:"id"`
 }
 
-// GetRedirectUris returns RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication.RedirectUris, and is useful for accessing the field via an interface.
-func (v *RedirectUriMutationAppUpdateRedirectUrisApplicationResponseAppApplication) GetRedirectUris() string {
-	return v.RedirectUris
+// GetId returns RedirectUriMutationAppUpdateApplicationResponseAppApplication.Id, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationAppUpdateApplicationResponseAppApplication) GetId() int { return v.Id }
+
+// RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError includes the requested fields of the GraphQL type UserError.
+type RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError struct {
+	Code    ErrorCode `json:"code"`
+	Field   string    `json:"field"`
+	Message string    `json:"message"`
+}
+
+// GetCode returns RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError.Code, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError) GetCode() ErrorCode {
+	return v.Code
+}
+
+// GetField returns RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError.Field, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError) GetField() string {
+	return v.Field
+}
+
+// GetMessage returns RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError.Message, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationAppUpdateApplicationResponseUserErrorsUserError) GetMessage() string {
+	return v.Message
 }
 
 // RedirectUriMutationResponse is returned by RedirectUriMutation on success.
 type RedirectUriMutationResponse struct {
-	AppUpdateRedirectUris RedirectUriMutationAppUpdateRedirectUrisApplicationResponse `json:"appUpdateRedirectUris"`
+	AppUpdate RedirectUriMutationAppUpdateApplicationResponse `json:"appUpdate"`
 }
 
-// GetAppUpdateRedirectUris returns RedirectUriMutationResponse.AppUpdateRedirectUris, and is useful for accessing the field via an interface.
-func (v *RedirectUriMutationResponse) GetAppUpdateRedirectUris() RedirectUriMutationAppUpdateRedirectUrisApplicationResponse {
-	return v.AppUpdateRedirectUris
+// GetAppUpdate returns RedirectUriMutationResponse.AppUpdate, and is useful for accessing the field via an interface.
+func (v *RedirectUriMutationResponse) GetAppUpdate() RedirectUriMutationAppUpdateApplicationResponse {
+	return v.AppUpdate
 }
 
 // ThemeDeleteResponse is returned by ThemeDelete on success.
@@ -731,15 +764,15 @@ func (v *__AssetUpdateInput) GetInput() AssetInput { return v.Input }
 
 // __RedirectUriMutationInput is used internally by genqlient
 type __RedirectUriMutationInput struct {
-	Id           int    `json:"id"`
-	RedirectUris string `json:"redirectUris"`
+	Id    int      `json:"id"`
+	Input AppInput `json:"input"`
 }
 
 // GetId returns __RedirectUriMutationInput.Id, and is useful for accessing the field via an interface.
 func (v *__RedirectUriMutationInput) GetId() int { return v.Id }
 
-// GetRedirectUris returns __RedirectUriMutationInput.RedirectUris, and is useful for accessing the field via an interface.
-func (v *__RedirectUriMutationInput) GetRedirectUris() string { return v.RedirectUris }
+// GetInput returns __RedirectUriMutationInput.Input, and is useful for accessing the field via an interface.
+func (v *__RedirectUriMutationInput) GetInput() AppInput { return v.Input }
 
 // __ThemeDeleteInput is used internally by genqlient
 type __ThemeDeleteInput struct {
@@ -1138,11 +1171,15 @@ func OrganizationSearch(
 
 // The query or mutation executed by RedirectUriMutation.
 const RedirectUriMutation_Operation = `
-mutation RedirectUriMutation ($id: Int!, $redirectUris: String!) {
-	appUpdateRedirectUris(id: $id, redirectUris: $redirectUris) {
+mutation RedirectUriMutation ($id: Int!, $input: AppInput!) {
+	appUpdate(id: $id, data: $input) {
 		app {
 			id
-			redirectUris
+		}
+		userErrors {
+			code
+			field
+			message
 		}
 	}
 }
@@ -1152,14 +1189,14 @@ func RedirectUriMutation(
 	ctx context.Context,
 	client graphql.Client,
 	id int,
-	redirectUris string,
+	input AppInput,
 ) (*RedirectUriMutationResponse, error) {
 	req := &graphql.Request{
 		OpName: "RedirectUriMutation",
 		Query:  RedirectUriMutation_Operation,
 		Variables: &__RedirectUriMutationInput{
-			Id:           id,
-			RedirectUris: redirectUris,
+			Id:    id,
+			Input: input,
 		},
 	}
 	var err error

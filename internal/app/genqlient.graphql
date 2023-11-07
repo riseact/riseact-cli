@@ -52,6 +52,14 @@ query AppSearchQuery {
 }
 
 # @genqlient(for: "AppInput.logoId", omitempty: true)
+# @genqlient(for: "AppInput.name", omitempty: true)
+# @genqlient(for: "AppInput.type", omitempty: true)
+# @genqlient(for: "AppInput.organizationId", omitempty: true)
+# @genqlient(for: "AppInput.appUrl", omitempty: true)
+# @genqlient(for: "AppInput.installUrl", omitempty: true)
+# @genqlient(for: "AppInput.authorHomepageUrl", omitempty: true)
+# @genqlient(for: "AppInput.description", omitempty: true)
+# @genqlient(for: "AppInput.isEmbedded", omitempty: true)
 mutation AppCreateMutation(
   $input: AppInput!
   ) {
@@ -71,11 +79,15 @@ mutation AppCreateMutation(
   }
 }
 
-mutation RedirectUriMutation($id: Int!, $redirectUris: String!) {
-  appUpdateRedirectUris(id: $id, redirectUris: $redirectUris) {
+mutation RedirectUriMutation($id: Int!, $input: AppInput!) {
+  appUpdate(id: $id, data: $input) {
     app {
       id
-      redirectUris
+    }
+    userErrors {
+      code
+      field
+      message
     }
   }
 }
