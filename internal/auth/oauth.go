@@ -10,10 +10,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os/exec"
 	"riseact/internal/config"
 	"riseact/internal/utils/logger"
-	"runtime"
 	"time"
 )
 
@@ -177,23 +175,6 @@ func getAccessToken(auth_code string, code_verifier string) (*AccessToken, error
 	accessToken.ExpiresAt = int(time.Now().Unix()) + accessToken.ExpiresIn
 
 	return accessToken, nil
-}
-
-func launchBrowser(url string) error {
-	var err error
-
-	switch runtime.GOOS {
-	case "linux":
-		err = exec.Command("xdg-open", url).Start()
-	case "windows":
-		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	case "darwin":
-		err = exec.Command("open", url).Start()
-	default:
-		err = fmt.Errorf("unsupported platform")
-	}
-
-	return err
 }
 
 func refreshToken() error {

@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"riseact/internal/config"
+	"riseact/internal/utils/osutils"
 	"time"
 )
 
@@ -11,7 +12,7 @@ func Login() error {
 
 	url, code_verifier := generateAuthorizationURL()
 
-	err := launchBrowser(url)
+	err := osutils.LaunchBrowser(url)
 
 	if err != nil {
 		return err
