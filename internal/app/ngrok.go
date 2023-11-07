@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"riseact/internal/config"
+	"riseact/internal/utils/logger"
 
 	"github.com/AlecAivazis/survey/v2"
 	"golang.ngrok.com/ngrok"
@@ -26,6 +27,11 @@ func StartNgrokTunnel() (ngrok.Tunnel, error) {
 		ngrokConfig.HTTPEndpoint(),
 		ngrok.WithAuthtoken(settings.NgrokToken),
 	)
+
+	if err != nil {
+		logger.Debug("Error starting ngrok tunnel")
+		return nil, err
+	}
 
 	return tun, nil
 }

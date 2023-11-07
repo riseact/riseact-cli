@@ -18,7 +18,7 @@ func LoadEnv() (*AppEnv, error) {
 	err := godotenv.Load()
 
 	if err != nil {
-		return nil, err
+		return &AppEnv{}, nil
 	}
 
 	a := &AppEnv{}
