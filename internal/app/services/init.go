@@ -74,7 +74,7 @@ func appDataForm() *AppData {
 
 	templatePrompt := &survey.Select{
 		Message: "App template",
-		Options: []string{"Remix", "Node"},
+		Options: []string{"Node"},
 	}
 	survey.AskOne(templatePrompt, &appData.template)
 

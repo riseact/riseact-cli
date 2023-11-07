@@ -117,7 +117,6 @@ func initApp(host string) (*app.Application, error) {
 
 	} else {
 		a, err = selectExistingApp(appEnv)
-
 		if err != nil {
 			return nil, err
 		}
@@ -140,6 +139,10 @@ func selectExistingApp(e *app.AppEnv) (*app.Application, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if len(partnerApps) == 0 {
+		return nil, fmt.Errorf("No apps found. Please create a new one.")
 	}
 
 	var appIds []string
