@@ -356,6 +356,17 @@ const (
 	ApplicationTypePrivate ApplicationType = "PRIVATE"
 )
 
+type AppsFiltersInput struct {
+	Q    string          `json:"q"`
+	Type ApplicationType `json:"type"`
+}
+
+// GetQ returns AppsFiltersInput.Q, and is useful for accessing the field via an interface.
+func (v *AppsFiltersInput) GetQ() string { return v.Q }
+
+// GetType returns AppsFiltersInput.Type, and is useful for accessing the field via an interface.
+func (v *AppsFiltersInput) GetType() ApplicationType { return v.Type }
+
 // AssetCreateAssetCreateAsset includes the requested fields of the GraphQL type Asset.
 type AssetCreateAssetCreateAsset struct {
 	Id          int    `json:"id"`
@@ -730,6 +741,14 @@ type __AppCreateMutationInput struct {
 // GetInput returns __AppCreateMutationInput.Input, and is useful for accessing the field via an interface.
 func (v *__AppCreateMutationInput) GetInput() AppInput { return v.Input }
 
+// __AppSearchQueryInput is used internally by genqlient
+type __AppSearchQueryInput struct {
+	Filters AppsFiltersInput `json:"filters"`
+}
+
+// GetFilters returns __AppSearchQueryInput.Filters, and is useful for accessing the field via an interface.
+func (v *__AppSearchQueryInput) GetFilters() AppsFiltersInput { return v.Filters }
+
 // __AssetCreateInput is used internally by genqlient
 type __AssetCreateInput struct {
 	Input AssetInput `json:"input"`
@@ -934,8 +953,8 @@ func AppCreateMutation(
 
 // The query or mutation executed by AppSearchQuery.
 const AppSearchQuery_Operation = `
-query AppSearchQuery {
-	apps {
+query AppSearchQuery ($filters: AppsFiltersInput) {
+	apps(filters: $filters) {
 		edges {
 			node {
 				id
@@ -957,10 +976,14 @@ query AppSearchQuery {
 func AppSearchQuery(
 	ctx context.Context,
 	client graphql.Client,
+	filters AppsFiltersInput,
 ) (*AppSearchQueryResponse, error) {
 	req := &graphql.Request{
 		OpName: "AppSearchQuery",
 		Query:  AppSearchQuery_Operation,
+		Variables: &__AppSearchQueryInput{
+			Filters: filters,
+		},
 	}
 	var err error
 

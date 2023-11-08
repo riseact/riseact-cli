@@ -6,8 +6,8 @@ import (
 	"riseact/internal/app"
 	"riseact/internal/config"
 	"riseact/internal/gql"
+	"riseact/internal/organizations"
 	"riseact/internal/utils/logger"
-	"riseact/internal/utils/osutils"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -48,11 +48,11 @@ func StartDevEnvironment() error {
 	// start reverse proxy server
 	go proxy.Launch()
 
-	err = osutils.LaunchBrowser(tun.URL())
+	// err = osutils.LaunchBrowser(tun.URL())
 
-	if err != nil {
-		return err
-	}
+	// if err != nil {
+	// 	return err
+	// }
 
 	// start web app
 	err = a.Launch()
@@ -123,6 +123,10 @@ func initApp(host string) (*app.Application, error) {
 
 	}
 
+	if a.ClientId == "" || a.ClientSecret == "" {
+		return nil, fmt.Errorf("Error creating app, client ID or client Secret are empty")
+	}
+
 	appEnv.ClientId = a.ClientId
 	appEnv.ClientSecret = a.ClientSecret
 
@@ -135,7 +139,7 @@ func initApp(host string) (*app.Application, error) {
 }
 
 func selectExistingApp(e *app.AppEnv) (*app.Application, error) {
-	partnerApps, err := app.GetApps()
+	partnerApps, err := app.GetPrivateApps()
 
 	if err != nil {
 		return nil, err
@@ -174,24 +178,32 @@ func createAppForm() (gql.AppInput, error) {
 	}
 	survey.AskOne(namePrompt, &name)
 
-	typePrompt := &survey.Select{
-		Message: "Select an app type",
-		Options: []string{"PUBLIC", "PRIVATE"},
+	// typePrompt := &survey.Select{
+	// 	Message: "Select an app type",
+	// 	Options: []string{"PUBLIC", "PRIVATE"},
+	// }
+
+	// var appTypeAnswer string
+
+	// survey.AskOne(typePrompt, &appTypeAnswer)
+
+	// choose a dev organization
+	organization, err := organizations.PickOrganizationForm()
+
+	if err != nil {
+		return gql.AppInput{}, err
 	}
-
-	var appTypeAnswer string
-
-	survey.AskOne(typePrompt, &appTypeAnswer)
 
 	// TODO: ask other basic questions
 
-	logger.Info("Creating app " + name + " of type " + appTypeAnswer)
+	logger.Info("Creating private app " + name + " for organization " + organization.Name)
 
-	appType := gql.ApplicationType(appTypeAnswer)
+	appType := gql.ApplicationType(gql.ApplicationTypePrivate)
 
 	return gql.AppInput{
-		Name:         name,
-		Type:         appType,
-		RedirectUris: "",
+		Name:           name,
+		Type:           appType,
+		OrganizationId: organization.Id,
+		RedirectUris:   "", // TODO: remove
 	}, nil
 }

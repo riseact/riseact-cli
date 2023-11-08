@@ -71,6 +71,7 @@ type ApplicationWebhookResponse {
 
 input AppsFiltersInput {
   q: String = null
+  type: ApplicationType = null
 }
 
 type Asset {

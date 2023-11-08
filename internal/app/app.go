@@ -126,13 +126,18 @@ func GetAppByClientId(clientId string) (*Application, error) {
 	}, nil
 }
 
-func GetApps() ([]Application, error) {
+func GetPrivateApps() ([]Application, error) {
 	graphqlClient, err := gql.GetClient()
 
 	if err != nil {
 		return nil, err
 	}
-	resp, err := gql.AppSearchQuery(context.Background(), *graphqlClient)
+
+	filters := &gql.AppsFiltersInput{
+		Type: gql.ApplicationTypePrivate,
+	}
+
+	resp, err := gql.AppSearchQuery(context.Background(), *graphqlClient, *filters)
 
 	if err != nil {
 		return nil, err

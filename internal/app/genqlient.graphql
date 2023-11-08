@@ -32,8 +32,8 @@ query AppByIdQuery($id: Int!) {
   }
 }
 
-query AppSearchQuery {
-  apps {
+query AppSearchQuery($filters: AppsFiltersInput) {
+  apps(filters: $filters) {
     edges {
       node {
         id
