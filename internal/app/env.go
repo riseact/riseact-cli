@@ -23,8 +23,6 @@ func LoadEnv() (*AppEnv, error) {
 
 	a := &AppEnv{}
 
-	a.DatabaseUrl = os.Getenv("DATABASE_URL")
-	a.SessionSecret = os.Getenv("SESSION_SECRET")
 	a.ClientId = os.Getenv("CLIENT_ID")
 	a.ClientSecret = os.Getenv("CLIENT_SECRET")
 	a.RiseactAppUrl = os.Getenv("RISEACT_APP_URL")
@@ -33,15 +31,17 @@ func LoadEnv() (*AppEnv, error) {
 }
 
 func (a *AppEnv) Store() error {
-	data := map[string]string{
-		"DATABASE_URL":    a.DatabaseUrl,
-		"SESSION_SECRET":  a.SessionSecret,
-		"CLIENT_ID":       a.ClientId,
-		"CLIENT_SECRET":   a.ClientSecret,
-		"RISEACT_APP_URL": a.RiseactAppUrl,
+	data, err := godotenv.Read()
+
+	if err != nil {
+		return err
 	}
 
-	err := godotenv.Write(data, ".env")
+	data["CLIENT_ID"] = a.ClientId
+	data["CLIENT_SECRET"] = a.ClientSecret
+	data["RISEACT_APP_URL"] = a.RiseactAppUrl
+
+	err = godotenv.Write(data, ".env")
 
 	if err != nil {
 		return err
