@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"net"
 	"riseact/internal/config"
 	"riseact/internal/utils/logger"
 
@@ -10,6 +11,16 @@ import (
 	"golang.ngrok.com/ngrok"
 	ngrokConfig "golang.ngrok.com/ngrok/config"
 )
+
+func isPortInUse(port int) bool {
+	address := fmt.Sprintf(":%d", port)
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return true
+	}
+	defer listener.Close()
+	return false
+}
 
 func StartNgrokTunnel() (ngrok.Tunnel, error) {
 	settings, err := config.GetUserSettings()
@@ -23,10 +34,18 @@ func StartNgrokTunnel() (ngrok.Tunnel, error) {
 		return nil, err
 	}
 
+	// check if port is already in use by another ngrok tunnel
+	if isPortInUse(8080) {
+		return nil, fmt.Errorf("port is already in use by another ngrok tunnel")
+	}
+
+	fmt.Println("Starting ngrok tunnel...")
 	tun, err := ngrok.Listen(context.Background(),
 		ngrokConfig.HTTPEndpoint(),
 		ngrok.WithAuthtoken(settings.NgrokToken),
 	)
+
+	fmt.Println("Tunnel started successfully, url: ", tun.URL())
 
 	if err != nil {
 		logger.Debug("Error starting ngrok tunnel")
@@ -55,6 +74,8 @@ func ensureNgrokSetup() error {
 		}
 
 		err = config.SaveUserSettings(settings)
+
+		fmt.Println("Token saved successfully")
 
 		if err != nil {
 			return err
