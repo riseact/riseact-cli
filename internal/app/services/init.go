@@ -97,10 +97,8 @@ func appCloneTemplate(appData *AppData) error {
 		return err
 	}
 
-	// remove .git folder
+	// remove .git stuff
 	err = os.RemoveAll(fmt.Sprintf("%s/.git", appData.path))
-	// remove .gitignore and .gitmodules if exists
-	os.Remove(fmt.Sprintf("%s/.gitignore", appData.path))
 	os.Remove(fmt.Sprintf("%s/.gitmodules", appData.path))
 
 	if err != nil {
