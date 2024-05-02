@@ -2,6 +2,8 @@ package app
 
 import (
 	"os"
+	"path/filepath"
+	"riseact/internal/utils/fsutils"
 
 	"github.com/joho/godotenv"
 )
@@ -15,7 +17,18 @@ type AppEnv struct {
 }
 
 func LoadEnv() (*AppEnv, error) {
-	err := godotenv.Load()
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return &AppEnv{}, err
+	}
+	environmentPath := filepath.Join(dir, ".env")
+
+	err = fsutils.ValidateEnvFile(environmentPath)
+	if err != nil {
+		return &AppEnv{}, err
+	}
+
+	err = godotenv.Load(environmentPath)
 
 	if err != nil {
 		return &AppEnv{}, nil

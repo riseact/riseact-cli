@@ -45,8 +45,6 @@ func StartNgrokTunnel() (ngrok.Tunnel, error) {
 		ngrok.WithAuthtoken(settings.NgrokToken),
 	)
 
-	fmt.Println("Tunnel started successfully, url: ", tun.URL())
-
 	if err != nil {
 		logger.Debug("Error starting ngrok tunnel")
 		return nil, err
