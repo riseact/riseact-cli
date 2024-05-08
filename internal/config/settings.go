@@ -156,7 +156,7 @@ func LoadConfig() error {
 		return fmt.Errorf("error getting config directory: %s", err)
 	}
 
-	viper.SetConfigName("config")
+	viper.SetConfigName("riseact")
 	viper.AddConfigPath(configDir)
 
 	if err := viper.ReadInConfig(); err != nil {
