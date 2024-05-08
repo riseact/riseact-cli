@@ -129,8 +129,20 @@ func SaveUserSettings(settings *UserSettings) error {
 	viper.Set("partner_name", settings.PartnerName)
 	viper.Set("ngrok_token", settings.NgrokToken)
 
-	if err := viper.WriteConfig(); err != nil {
-		return err
+	configDir, err := getConfigDirectory()
+
+	if err != nil {
+		return fmt.Errorf("error getting config directory: %s", err)
+	}
+
+	if err := viper.SafeWriteConfigAs(configDir); err != nil {
+		if os.IsNotExist(err) {
+			err = viper.WriteConfigAs(configDir)
+
+			if err != nil {
+				return fmt.Errorf("error writing config file: %s", err)
+			}
+		}
 	}
 
 	return nil
@@ -138,11 +150,10 @@ func SaveUserSettings(settings *UserSettings) error {
 
 func LoadConfig() error {
 	initDefaultConfig()
-
 	configDir, err := getConfigDirectory()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting config directory: %s", err)
 	}
 
 	viper.SetConfigName("config")
@@ -150,7 +161,7 @@ func LoadConfig() error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			fmt.Fprintf(os.Stderr, "No configuration file loaded - using defaults")
+			fmt.Fprintf(os.Stderr, "No configuration file loaded - using defaults\n")
 		} else {
 			panic("Error reading config file:" + err.Error())
 		}
