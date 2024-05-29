@@ -79,9 +79,10 @@ func getConfigDirectory() (string, error) {
 	}
 
 	// Adjust based on your platform/app
-	path := filepath.Join(home, ".config", "riseact")
+	path := filepath.Join(home, ".config", "riseact.yml")
+	// create directory if it doesn't exist
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(home, ".config")); os.IsNotExist(err) {
 		// Create directory with 0700 permissions (read/write/execute only for the user)
 		os.MkdirAll(path, 0700)
 	}
@@ -135,14 +136,8 @@ func SaveUserSettings(settings *UserSettings) error {
 		return fmt.Errorf("error getting config directory: %s", err)
 	}
 
-	if err := viper.SafeWriteConfigAs(configDir); err != nil {
-		if os.IsNotExist(err) {
-			err = viper.WriteConfigAs(configDir)
-
-			if err != nil {
-				return fmt.Errorf("error writing config file: %s", err)
-			}
-		}
+	if err := viper.WriteConfigAs(configDir); err != nil {
+		return fmt.Errorf("error writing config file: %s", err)
 	}
 
 	return nil
@@ -156,7 +151,7 @@ func LoadConfig() error {
 		return fmt.Errorf("error getting config directory: %s", err)
 	}
 
-	viper.SetConfigName("riseact")
+	viper.SetConfigName("riseact.yml")
 	viper.AddConfigPath(configDir)
 
 	if err := viper.ReadInConfig(); err != nil {
