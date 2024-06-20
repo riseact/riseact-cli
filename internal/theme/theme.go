@@ -33,6 +33,12 @@ type ThemeUploadResponse struct {
 	Name string `json:"name"`
 }
 
+type ThemeErrorResponse struct {
+	Asset string `json:"asset"`
+	Theme string `json:"theme"`
+	Error string `json:"error"`
+}
+
 type Theme struct {
 	Id             int
 	Manifest       ThemeManifest
@@ -248,14 +254,19 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		var themeErr ThemeErrorResponse
+
+		json.NewDecoder(resp.Body).Decode(&themeErr)
+
+		logger.Errorf("Error:\nAsset: %sMessage: %s", themeErr.Asset, themeErr.Error)
+		return nil, fmt.Errorf("upload fallito: %s", resp.Status)
+	}
+
 	var themeResp ThemeUploadResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&themeResp); err != nil {
 		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("upload fallito: %s", resp.Status)
 	}
 
 	return &themeResp, nil
