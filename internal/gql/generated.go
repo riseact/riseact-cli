@@ -533,7 +533,13 @@ func (v *GetPartnerResponse) GetPartner() GetPartnerPartner { return v.Partner }
 
 // OrganizationSearchOrganizationsOrganizationConnection includes the requested fields of the GraphQL type OrganizationConnection.
 type OrganizationSearchOrganizationsOrganizationConnection struct {
-	Edges []OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge `json:"edges"`
+	PageInfo OrganizationSearchOrganizationsOrganizationConnectionPageInfo                `json:"pageInfo"`
+	Edges    []OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge `json:"edges"`
+}
+
+// GetPageInfo returns OrganizationSearchOrganizationsOrganizationConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnection) GetPageInfo() OrganizationSearchOrganizationsOrganizationConnectionPageInfo {
+	return v.PageInfo
 }
 
 // GetEdges returns OrganizationSearchOrganizationsOrganizationConnection.Edges, and is useful for accessing the field via an interface.
@@ -543,7 +549,13 @@ func (v *OrganizationSearchOrganizationsOrganizationConnection) GetEdges() []Org
 
 // OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge includes the requested fields of the GraphQL type OrganizationEdge.
 type OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge struct {
-	Node OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdgeNodeOrganization `json:"node"`
+	Cursor string                                                                                     `json:"cursor"`
+	Node   OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdgeNodeOrganization `json:"node"`
+}
+
+// GetCursor returns OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge.Cursor, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge) GetCursor() string {
+	return v.Cursor
 }
 
 // GetNode returns OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationEdge.Node, and is useful for accessing the field via an interface.
@@ -567,6 +579,40 @@ func (v *OrganizationSearchOrganizationsOrganizationConnectionEdgesOrganizationE
 	return v.Name
 }
 
+// OrganizationSearchOrganizationsOrganizationConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+type OrganizationSearchOrganizationsOrganizationConnectionPageInfo struct {
+	HasNextPage     bool   `json:"hasNextPage"`
+	HasPreviousPage bool   `json:"hasPreviousPage"`
+	StartCursor     string `json:"startCursor"`
+	EndCursor       string `json:"endCursor"`
+	Total           int    `json:"total"`
+}
+
+// GetHasNextPage returns OrganizationSearchOrganizationsOrganizationConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetHasPreviousPage returns OrganizationSearchOrganizationsOrganizationConnectionPageInfo.HasPreviousPage, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnectionPageInfo) GetHasPreviousPage() bool {
+	return v.HasPreviousPage
+}
+
+// GetStartCursor returns OrganizationSearchOrganizationsOrganizationConnectionPageInfo.StartCursor, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnectionPageInfo) GetStartCursor() string {
+	return v.StartCursor
+}
+
+// GetEndCursor returns OrganizationSearchOrganizationsOrganizationConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetTotal returns OrganizationSearchOrganizationsOrganizationConnectionPageInfo.Total, and is useful for accessing the field via an interface.
+func (v *OrganizationSearchOrganizationsOrganizationConnectionPageInfo) GetTotal() int {
+	return v.Total
+}
+
 // OrganizationSearchResponse is returned by OrganizationSearch on success.
 type OrganizationSearchResponse struct {
 	Organizations OrganizationSearchOrganizationsOrganizationConnection `json:"organizations"`
@@ -576,6 +622,25 @@ type OrganizationSearchResponse struct {
 func (v *OrganizationSearchResponse) GetOrganizations() OrganizationSearchOrganizationsOrganizationConnection {
 	return v.Organizations
 }
+
+type PaginationInput struct {
+	First  int    `json:"first"`
+	Last   int    `json:"last"`
+	After  string `json:"after"`
+	Before string `json:"before"`
+}
+
+// GetFirst returns PaginationInput.First, and is useful for accessing the field via an interface.
+func (v *PaginationInput) GetFirst() int { return v.First }
+
+// GetLast returns PaginationInput.Last, and is useful for accessing the field via an interface.
+func (v *PaginationInput) GetLast() int { return v.Last }
+
+// GetAfter returns PaginationInput.After, and is useful for accessing the field via an interface.
+func (v *PaginationInput) GetAfter() string { return v.After }
+
+// GetBefore returns PaginationInput.Before, and is useful for accessing the field via an interface.
+func (v *PaginationInput) GetBefore() string { return v.Before }
 
 // RedirectUriMutationAppUpdateApplicationResponse includes the requested fields of the GraphQL type ApplicationResponse.
 type RedirectUriMutationAppUpdateApplicationResponse struct {
@@ -780,6 +845,14 @@ func (v *__AssetUpdateInput) GetThemeId() int { return v.ThemeId }
 
 // GetInput returns __AssetUpdateInput.Input, and is useful for accessing the field via an interface.
 func (v *__AssetUpdateInput) GetInput() AssetInput { return v.Input }
+
+// __OrganizationSearchInput is used internally by genqlient
+type __OrganizationSearchInput struct {
+	Pagination PaginationInput `json:"pagination"`
+}
+
+// GetPagination returns __OrganizationSearchInput.Pagination, and is useful for accessing the field via an interface.
+func (v *__OrganizationSearchInput) GetPagination() PaginationInput { return v.Pagination }
 
 // __RedirectUriMutationInput is used internally by genqlient
 type __RedirectUriMutationInput struct {
@@ -1158,9 +1231,17 @@ func GetPartner(
 
 // The query or mutation executed by OrganizationSearch.
 const OrganizationSearch_Operation = `
-query OrganizationSearch {
-	organizations {
+query OrganizationSearch ($pagination: PaginationInput) {
+	organizations(pagination: $pagination) {
+		pageInfo {
+			hasNextPage
+			hasPreviousPage
+			startCursor
+			endCursor
+			total
+		}
 		edges {
+			cursor
 			node {
 				id
 				name
@@ -1173,10 +1254,14 @@ query OrganizationSearch {
 func OrganizationSearch(
 	ctx context.Context,
 	client graphql.Client,
+	pagination PaginationInput,
 ) (*OrganizationSearchResponse, error) {
 	req := &graphql.Request{
 		OpName: "OrganizationSearch",
 		Query:  OrganizationSearch_Operation,
+		Variables: &__OrganizationSearchInput{
+			Pagination: pagination,
+		},
 	}
 	var err error
 

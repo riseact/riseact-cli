@@ -17,7 +17,8 @@ func OrganizationSearch() ([]Organization, error) {
 		return nil, err
 	}
 
-	resp, err := gql.OrganizationSearch(context.Background(), *client)
+	pagination := gql.PaginationInput{First: 1000}
+	resp, err := gql.OrganizationSearch(context.Background(), *client, pagination)
 
 	if err != nil {
 		return nil, err

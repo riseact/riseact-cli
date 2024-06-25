@@ -1,6 +1,14 @@
-query OrganizationSearch {
-  organizations {
+query OrganizationSearch($pagination: PaginationInput) {
+  organizations(pagination: $pagination) {
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+      total
+    }
     edges {
+      cursor
       node {
         id
         name
