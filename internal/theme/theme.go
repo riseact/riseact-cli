@@ -160,9 +160,6 @@ func (t *Theme) Delete() error {
 }
 
 func createZipThemePackage(srcDir string, destZip string) error {
-	fmt.Println(srcDir)
-	fmt.Println(destZip)
-
 	// Create the folder to the zip first if needed
 	if err := os.MkdirAll(filepath.Dir(destZip), os.ModePerm); err != nil {
 		return err
@@ -272,7 +269,7 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 		return nil, fmt.Errorf("upload fallito: %s", resp.Status)
 	}
 
-	logger.Debug("File Upload successfully")
+	logger.Info("File Upload successfully")
 
 	var themeResp ThemeUploadResponse
 
