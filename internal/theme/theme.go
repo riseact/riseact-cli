@@ -71,8 +71,12 @@ func (t *Theme) Package(dstDir string) (string, error) {
 
 	filename := fmt.Sprintf("%s.zip", "theme")
 
-	if dstDir != "." {
-		filename = fmt.Sprintf("%s/%s", dstDir, filename)
+	// if dstDir != "." {
+	// 	filename = fmt.Sprintf("%s/%s", dstDir, filename)
+	// }
+	
+	if t.Path != "." {
+		filename = filepath.Join(t.Path, filename)
 	}
 
 	err := createZipThemePackage(t.Path, filename)
@@ -118,7 +122,7 @@ func (t *Theme) Upload(remoteThemeId *int) (int, error) {
 		return -1, fmt.Errorf("Not a valid theme folder")
 	}
 
-	filename, err := t.Package("/tmp")
+	filename, err := t.Package(filepath.Join(t.Path, "tmp"))
 
 	if err != nil {
 		return -1, err
@@ -164,6 +168,8 @@ func (t *Theme) Delete() error {
 }
 
 func createZipThemePackage(srcDir string, destZip string) error {
+	fmt.Println(srcDir)
+	fmt.Println(destZip)
 	zipFile, err := os.Create(destZip)
 	if err != nil {
 		return err
@@ -183,7 +189,15 @@ func createZipThemePackage(srcDir string, destZip string) error {
 			return err
 		}
 
-		if relPath == "." || relPath == ".." || relPath == destZip {
+		// fmt.Println(path)
+		if relPath == "." || relPath == ".." || relPath == destZip{
+			return nil
+		}
+
+		// fmt.Println(path)
+		// fmt.Println(destZip)
+		if (path == "." || path == ".." || path == destZip) {
+			fmt.Println("Hit the thing", path)
 			return nil
 		}
 
