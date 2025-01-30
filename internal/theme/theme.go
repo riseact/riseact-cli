@@ -272,6 +272,8 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 		return nil, fmt.Errorf("upload fallito: %s", resp.Status)
 	}
 
+	logger.Debug("File Upload successfully")
+
 	var themeResp ThemeUploadResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&themeResp); err != nil {
