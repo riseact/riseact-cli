@@ -62,7 +62,7 @@ func NewTheme(path string) (*Theme, error) {
 
 func (t *Theme) Package(dstDir string) (string, error) {
 	if !t.IsValid() {
-		return "", fmt.Errorf("Not a valid theme folder")
+		return "", fmt.Errorf("not a valid theme folder")
 	}
 
 	if dstDir == "" {
@@ -111,7 +111,7 @@ func (t *Theme) Upload(remoteThemeId *int) (int, error) {
 	// create a zip file of the theme
 
 	if !t.IsValid() {
-		return -1, fmt.Errorf("Not a valid theme folder")
+		return -1, fmt.Errorf("not a valid theme folder")
 	}
 
 	filename, err := t.Package(filepath.Join(t.Path, "tmp"))
