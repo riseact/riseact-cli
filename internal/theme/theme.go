@@ -69,15 +69,7 @@ func (t *Theme) Package(dstDir string) (string, error) {
 		dstDir = "."
 	}
 
-	filename := fmt.Sprintf("%s.zip", "theme")
-
-	// if dstDir != "." {
-	// 	filename = fmt.Sprintf("%s/%s", dstDir, filename)
-	// }
-	
-	if t.Path != "." {
-		filename = filepath.Join(t.Path, filename)
-	}
+	filename := filepath.Join(t.Path, "tmp", "theme.zip")
 
 	err := createZipThemePackage(t.Path, filename)
 
