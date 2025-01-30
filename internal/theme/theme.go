@@ -162,6 +162,12 @@ func (t *Theme) Delete() error {
 func createZipThemePackage(srcDir string, destZip string) error {
 	fmt.Println(srcDir)
 	fmt.Println(destZip)
+
+	// Create the folder to the zip first if needed
+	if err := os.MkdirAll(filepath.Dir(destZip), os.ModePerm); err != nil {
+		return err
+	}
+
 	zipFile, err := os.Create(destZip)
 	if err != nil {
 		return err
