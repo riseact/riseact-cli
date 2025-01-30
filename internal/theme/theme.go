@@ -187,15 +187,12 @@ func createZipThemePackage(srcDir string, destZip string) error {
 			return err
 		}
 
-		// fmt.Println(path)
 		if relPath == "." || relPath == ".." || relPath == destZip{
 			return nil
 		}
 
-		// fmt.Println(path)
-		// fmt.Println(destZip)
-		if (path == "." || path == ".." || path == destZip) {
-			fmt.Println("Hit the thing", path)
+		// Don't add again the zip inside the same zip file
+		if (path == destZip) {
 			return nil
 		}
 
