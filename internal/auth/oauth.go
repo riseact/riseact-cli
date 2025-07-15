@@ -172,6 +172,10 @@ func getAccessToken(auth_code string, code_verifier string) (*AccessToken, error
 		return nil, err
 	}
 
+	if accessToken.AccessToken == "" {
+		return nil, fmt.Errorf("Unable to authenticate. Please login again")
+	}
+
 	accessToken.ExpiresAt = int(time.Now().Unix()) + accessToken.ExpiresIn
 
 	return accessToken, nil
