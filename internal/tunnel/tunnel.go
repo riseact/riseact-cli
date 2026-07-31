@@ -6,13 +6,13 @@ package tunnel
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/fatedier/frp/client"
+	"github.com/fatedier/frp/client/proxy"
 	"github.com/fatedier/frp/pkg/config"
 	"github.com/fatedier/frp/pkg/config/source"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
@@ -43,11 +43,32 @@ type Config struct {
 	// LocalPort is where the CLI's reverse proxy is listening.
 	LocalPort int
 
+	// OnProgress, when set, receives a short line for each step of bringing the
+	// tunnel up. Establishing one takes a couple of network round trips, and on a
+	// first run also waits on certificate issuance — without this the CLI looks
+	// stalled for several seconds with nothing on screen.
+	OnProgress func(message string)
+
 	// LogPath is where frp's own diagnostics are written. frp logs through a
 	// package-level logger that would otherwise print to the terminal in its own
 	// format, on top of ours. Sending it to a file keeps the output clean while
 	// leaving a trail to ask a partner for. Defaults to the temp directory.
 	LogPath string
+}
+
+const (
+	// proxyName identifies our single proxy to frp, and is what the status lookup
+	// below asks about.
+	proxyName = "riseact-dev"
+
+	// bindTimeout bounds the wait for the server to accept the tunnel.
+	bindTimeout = 30 * time.Second
+)
+
+func (c Config) progress(message string) {
+	if c.OnProgress != nil {
+		c.OnProgress(message)
+	}
 }
 
 // frp configures logging through a package-level singleton, so this happens once
@@ -104,6 +125,8 @@ func Start(cfg Config) (*Tunnel, error) {
 	subdomain := Subdomain(cfg.ClientID, cfg.ClientSecret)
 	url := fmt.Sprintf("https://%s.%s", subdomain, cfg.Zone)
 
+	cfg.progress(fmt.Sprintf("Opening the tunnel to %s (subdomain %s)...", cfg.ControlHost, subdomain))
+
 	common, proxies, err := buildConfig(cfg, subdomain)
 	if err != nil {
 		return nil, err
@@ -135,23 +158,31 @@ func Start(cfg Config) (*Tunnel, error) {
 
 	t := &Tunnel{url: url, cancel: cancel, done: done}
 
-	if err := waitUntilBound(t, cfg, subdomain); err != nil {
+	if err := waitUntilBound(svc, t); err != nil {
 		t.Close()
 		return nil, err
 	}
 
+	cfg.progress("Tunnel established")
+
 	return t, nil
 }
 
-// waitUntilBound blocks until the proxy is registered on the server, so callers
-// never advertise a URL that was refused.
+// waitUntilBound blocks until the server has accepted the proxy, so callers never
+// advertise a URL that was refused.
 //
-// frp keeps retrying a rejected proxy forever rather than surfacing an error, so
-// this polls the client's own view of its proxies instead of waiting on Run.
-func waitUntilBound(t *Tunnel, cfg Config, subdomain string) error {
-	deadline := time.After(30 * time.Second)
-	ticker := time.NewTicker(250 * time.Millisecond)
+// It reads the client's own view of the proxy rather than probing the public URL.
+// Probing was wrong in two ways. On a first run the probe itself triggers
+// certificate issuance, which takes longer than any sensible probe timeout, so the
+// CLI spun silently for tens of seconds. And a refusal was indistinguishable from
+// "not ready yet", so a rejected tunnel surfaced as a generic timeout instead of
+// the reason the server actually gave.
+func waitUntilBound(svc *client.Service, t *Tunnel) error {
+	deadline := time.After(bindTimeout)
+	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
+
+	status := svc.StatusExporter()
 
 	for {
 		select {
@@ -162,33 +193,30 @@ func waitUntilBound(t *Tunnel, cfg Config, subdomain string) error {
 			return fmt.Errorf("tunnel stopped before it was established")
 
 		case <-deadline:
-			return fmt.Errorf(
-				"tunnel was not authorized within 30s: check that app %s is registered and its credentials are current",
-				cfg.ClientID,
-			)
+			return fmt.Errorf("the tunnel was not established within %s", bindTimeout)
 
 		case <-ticker.C:
-			if reachable(t.url) {
+			s, ok := status.GetProxyStatus(proxyName)
+
+			if !ok {
+				continue
+			}
+
+			switch s.Phase {
+			case proxy.ProxyPhaseRunning:
 				return nil
+
+			case proxy.ProxyPhaseStartErr, proxy.ProxyPhaseClosed:
+				// Err carries what the server said, which for a refusal is the
+				// reason riseact-core gave.
+				if s.Err != "" {
+					return fmt.Errorf("the tunnel was refused: %s", s.Err)
+				}
+
+				return fmt.Errorf("the tunnel could not be established (%s)", s.Phase)
 			}
 		}
 	}
-}
-
-// reachable reports whether the public URL is being served by our tunnel rather
-// than frps' not-found page. A TLS error means the certificate does not exist
-// yet, which is expected on a first run and handled by Warm.
-func reachable(url string) bool {
-	client := &http.Client{Timeout: 5 * time.Second}
-
-	resp, err := client.Get(url)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	// frps answers 404 for a hostname with no client attached.
-	return resp.StatusCode != http.StatusNotFound
 }
 
 func buildConfig(cfg Config, subdomain string) (*v1.ClientCommonConfig, []v1.ProxyConfigurer, error) {
@@ -220,7 +248,7 @@ func buildConfig(cfg Config, subdomain string) (*v1.ClientCommonConfig, []v1.Pro
 
 	proxy := &v1.HTTPProxyConfig{
 		ProxyBaseConfig: v1.ProxyBaseConfig{
-			Name: "riseact-dev",
+			Name: proxyName,
 			Type: string(v1.ProxyTypeHTTP),
 			ProxyBackend: v1.ProxyBackend{
 				LocalIP:   "127.0.0.1",

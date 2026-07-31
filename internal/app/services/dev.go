@@ -46,11 +46,15 @@ func StartDevEnvironment() error {
 
 	defer access.Close()
 
+	logger.Info("")
 	logger.Infof("App url: %s", access.URL)
+	logger.Info("")
 
 	// FIXME: this is a hack, it should already be set in app env
 	os.Setenv("RISEACT_APP_URL", access.URL)
 	os.Setenv("ACCOUNTS_HOST", settings.AccountsHost)
+
+	logger.Info("Starting the dev server...")
 
 	// Blocks until the dev server exits or the user interrupts.
 	if err := a.Launch(ctx); err != nil {

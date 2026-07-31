@@ -36,12 +36,17 @@ func (d *devAccess) Close() {
 func startDevAccess(localPort int) (*app.Application, *devAccess, error) {
 	settings := config.GetAppSettings()
 
+	logger.Info("Checking the application on Riseact...")
+
 	a, appEnv, err := initApp()
 
 	if err != nil {
 		logger.Debugf("Error initializing app: %s", err.Error())
 		return nil, nil, err
 	}
+
+	logger.Infof("Application: %s (client id %s)", a.Name, a.ClientId)
+	logger.Debugf("Local reverse proxy on 127.0.0.1:%d", localPort)
 
 	access, err := openAccess(settings, a, appEnv, localPort)
 
@@ -51,6 +56,8 @@ func startDevAccess(localPort int) (*app.Application, *devAccess, error) {
 
 	// Deriving the hostname from credentials means it never changes, so this is
 	// idempotent after the first run.
+	logger.Debug("Registering the url on Riseact...")
+
 	if err := a.UpdateAppUris(access.URL); err != nil {
 		access.Close()
 		return nil, nil, fmt.Errorf("cannot update the app urls: %w", err)
@@ -89,6 +96,7 @@ func openAccess(
 		ClientSecret: clientSecret,
 		LocalPort:    localPort,
 		LogPath:      tunnelLogPath(),
+		OnProgress:   func(message string) { logger.Info(message) },
 	})
 
 	if err != nil {
@@ -98,14 +106,18 @@ func openAccess(
 	// On a first run Caddy issues the certificate during this call, which takes
 	// a few seconds. Warming it here keeps that wait in the terminal, where it
 	// can be explained, instead of in a blank iframe.
+	logger.Debug("Requesting the public url to force certificate issuance...")
+
 	err = tunnel.Warm(tun.URL(), func() {
-		logger.Info("Preparing the HTTPS certificate, this happens once per app...")
+		logger.Info("Preparing the HTTPS certificate, this happens once per app and takes a few seconds...")
 	})
 
 	if err != nil {
 		tun.Close()
 		return nil, err
 	}
+
+	logger.Debug("Certificate ready")
 
 	return &devAccess{URL: tun.URL(), tunnel: tun}, nil
 }
