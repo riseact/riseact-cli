@@ -1,57 +1,43 @@
 package services
 
 import (
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"riseact/internal/app"
+	"context"
+	"os"
+	"os/signal"
 	"riseact/internal/utils/logger"
-
-	"golang.ngrok.com/ngrok"
+	"strconv"
+	"syscall"
 )
 
+// ProxyApp exposes an already-running local server, without starting anything
+// itself.
 func ProxyApp(port string) error {
 	logger.Debug("Starting proxy on port " + port)
-	var a *app.Application
 
-	// start ngrok tunnel
-	tun, err := app.StartNgrokTunnel()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	localPort, err := strconv.Atoi(port)
 
 	if err != nil {
 		return err
 	}
 
-	// initialize app
-	if a == nil {
-		a, err = initApp(tun.URL())
+	_, access, err := startDevAccess(localPort)
 
-		if err != nil {
-			logger.Debugf("Error initializing app: %s", err.Error())
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
-	// print infos
+	defer access.Close()
+
 	logger.Info("")
-	logger.Infof("App url: %s", tun.URL())
+	logger.Infof("App url: %s", access.URL)
 	logger.Info("")
 
-	// start reverse proxy server
-	launch("http://localhost:"+port, tun)
+	<-ctx.Done()
 
-	return nil
-}
-
-func launch(destUrl string, tun ngrok.Tunnel) error {
-	targetURL, _ := url.Parse(destUrl)
-
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		proxy.ServeHTTP(w, r)
-	})
-
-	http.Serve(tun, handler)
+	logger.Info("Stopping the tunnel...")
 
 	return nil
 }

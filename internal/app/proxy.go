@@ -1,68 +1,65 @@
 package app
 
 import (
+	"fmt"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-
-	"golang.ngrok.com/ngrok"
-	"golang.org/x/net/websocket"
 )
 
+// ReverseProxy sits between the tunnel and the partner's dev server, on a local
+// port. Everything goes to the app server, websocket upgrades included: the SDK
+// installs its own upgrade handler and forwards HMR traffic to Vite itself, so
+// there is nothing to route separately here.
 type ReverseProxy struct {
-	TargetURL    string
-	WebsocketURL string
-	tunnel       *ngrok.Tunnel
+	listener net.Listener
+	proxy    *httputil.ReverseProxy
 }
 
-func NewReverseProxy(tunnel *ngrok.Tunnel, targetUrl string, websocketUrl string) *ReverseProxy {
-	return &ReverseProxy{
-		TargetURL:    targetUrl,
-		WebsocketURL: websocketUrl,
-		tunnel:       tunnel,
+// NewReverseProxy binds a listener on an ephemeral local port. Ephemeral rather
+// than fixed so two projects can run side by side without colliding.
+func NewReverseProxy(targetURL string) (*ReverseProxy, error) {
+	target, err := url.Parse(targetURL)
+
+	if err != nil {
+		return nil, fmt.Errorf("invalid app url %q: %w", targetURL, err)
 	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot open a local port: %w", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	// The dev server is usually still booting when the first request arrives, and
+	// the default behaviour is to log a Go stack-flavoured error to stderr on
+	// every one. Say something a partner can act on instead, once per request.
+	proxy.ErrorLog = log.New(io.Discard, "", 0)
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusBadGateway)
+		fmt.Fprintf(w, "The dev server at %s is not answering yet.\n", target)
+	}
+
+	return &ReverseProxy{listener: listener, proxy: proxy}, nil
 }
 
-func (rp *ReverseProxy) ProxyWebSocket(w http.ResponseWriter, r *http.Request, target *url.URL) {
-	director := func(req *http.Request) {
-		req.URL.Scheme = target.Scheme
-		req.URL.Host = target.Host
-		req.Header.Set("Host", target.Host)
-	}
-
-	proxy := &httputil.ReverseProxy{
-		Director: director,
-	}
-
-	proxy.ServeHTTP(w, r)
+// Port is the local port the proxy listens on.
+func (rp *ReverseProxy) Port() int {
+	return rp.listener.Addr().(*net.TCPAddr).Port
 }
 
-func (rp *ReverseProxy) Launch() {
-	targetURL, _ := url.Parse(rp.TargetURL)
-	websocketURL, _ := url.Parse(rp.WebsocketURL)
+// Serve blocks until the listener is closed.
+func (rp *ReverseProxy) Serve() error {
+	return http.Serve(rp.listener, rp.proxy)
+}
 
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Upgrade") == "websocket" && r.URL.Path == "/socket" {
-			rp.ProxyWebSocket(w, r, websocketURL)
-		} else {
-			proxy.ServeHTTP(w, r)
-		}
-	})
-
-	http.Handle("/socket", websocket.Handler(func(ws *websocket.Conn) {
-		defer ws.Close()
-
-		backendWS, err := websocket.Dial(rp.WebsocketURL, "", "http://localhost/")
-
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		defer backendWS.Close()
-	}))
-
-	http.Serve(*rp.tunnel, handler)
+// Close stops accepting connections.
+func (rp *ReverseProxy) Close() error {
+	return rp.listener.Close()
 }

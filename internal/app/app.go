@@ -46,8 +46,10 @@ func (a *Application) UpdateAppUris(appUri string) error {
 	return nil
 }
 
-func (a *Application) Launch() error {
-	return ExecCommand(".", "npm", "run", "dev")
+// Launch runs the project's dev server, returning when it exits or when ctx is
+// cancelled — whichever happens first.
+func (a *Application) Launch(ctx context.Context) error {
+	return ExecCommandContext(ctx, ".", "npm", "run", "dev")
 }
 
 func NewApp(input gql.AppInput) (*Application, error) {

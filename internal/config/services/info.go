@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"riseact/internal/config"
+	"strconv"
 )
 
 func PrintSettings() {
@@ -26,16 +27,16 @@ func PrintUserSettings() error {
 	settings, err := config.GetUserSettings()
 
 	if err != nil {
-		return fmt.Errorf("Error: " + err.Error())
+		return fmt.Errorf("error reading user settings: %w", err)
 	}
 
 	println("Name: " + settings.Name)
 	println("Email: " + settings.Email)
-	println("Partner ID: " + string(settings.PartnerID))
+	println("Partner ID: " + strconv.Itoa(settings.PartnerID))
 	println("Partner name: " + settings.PartnerName)
 	println("Access token: " + settings.AccessToken)
 	println("Refresh token: " + settings.RefreshToken)
-	println("Expire at: " + string(settings.ExpireAt))
+	println("Expire at: " + strconv.Itoa(settings.ExpireAt))
 
 	return nil
 }

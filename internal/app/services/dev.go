@@ -1,13 +1,16 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"riseact/internal/app"
 	"riseact/internal/config"
 	"riseact/internal/gql"
 	"riseact/internal/organizations"
 	"riseact/internal/utils/logger"
+	"syscall"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -15,70 +18,68 @@ import (
 func StartDevEnvironment() error {
 	logger.Debug("Starting dev environment...")
 
-	var a *app.Application
+	// Everything below is torn down in reverse order when this context is
+	// cancelled, which is what frees the tunnel's subdomain immediately instead
+	// of leaving frps to notice a dropped heartbeat.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	settings := config.GetAppSettings()
 
-	// start ngrok tunnel
-	tun, err := app.StartNgrokTunnel()
+	// Everything reaches the app server, which handles websocket upgrades itself
+	// and forwards HMR traffic to Vite.
+	proxy, err := app.NewReverseProxy("http://localhost:3000")
 
 	if err != nil {
 		return err
 	}
 
-	// initialize app
-	if a == nil {
-		a, err = initApp(tun.URL())
+	defer proxy.Close()
 
-		if err != nil {
-			logger.Debugf("Error initializing app: %s", err.Error())
-			return err
-		}
+	go proxy.Serve()
+
+	a, access, err := startDevAccess(proxy.Port())
+
+	if err != nil {
+		return err
 	}
 
-	// print infos
-	logger.Infof("App url: %s", tun.URL())
+	defer access.Close()
 
-	proxy := app.NewReverseProxy(&tun, "http://localhost:3000", "http://localhost:3001")
+	logger.Infof("App url: %s", access.URL)
 
 	// FIXME: this is a hack, it should already be set in app env
-	os.Setenv("RISEACT_APP_URL", tun.URL())
+	os.Setenv("RISEACT_APP_URL", access.URL)
 	os.Setenv("ACCOUNTS_HOST", settings.AccountsHost)
 
-	// start reverse proxy server
-	go proxy.Launch()
-
-	// err = osutils.LaunchBrowser(tun.URL())
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// start web app
-	err = a.Launch()
-
-	if err != nil {
+	// Blocks until the dev server exits or the user interrupts.
+	if err := a.Launch(ctx); err != nil {
 		return err
 	}
+
+	logger.Info("Stopping the tunnel...")
 
 	return nil
 }
 
-func initApp(host string) (*app.Application, error) {
+// initApp resolves the application these credentials belong to, creating or
+// linking one if the project is not configured yet.
+//
+// It deliberately does not touch the app's URLs: the tunnel hostname is derived
+// from the credentials this returns, so it is not known yet. See startDevAccess.
+func initApp() (*app.Application, *app.AppEnv, error) {
 	var a *app.Application
 
 	appEnv, err := app.LoadEnv()
 
 	if err != nil {
-		return nil, fmt.Errorf("Error loading app env: %s", err.Error())
+		return nil, nil, fmt.Errorf("Error loading app env: %s", err.Error())
 	}
-
-	appEnv.RiseactAppUrl = host
 
 	err = app.IsValidApp(".")
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// retrieve app by client_id
@@ -86,10 +87,8 @@ func initApp(host string) (*app.Application, error) {
 		a, _ = app.GetAppByClientId(appEnv.ClientId)
 		if a != nil {
 			logger.Debugf("Existing App: %v\n", a.Name)
-			// update app redirect_uri with ngrok url
 			appEnv.Store()
-			a.UpdateAppUris(host)
-			return a, nil
+			return a, appEnv, nil
 		}
 	}
 
@@ -106,36 +105,35 @@ func initApp(host string) (*app.Application, error) {
 		appData, err := createAppForm()
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		a, err = app.NewApp(appData)
 
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 	} else {
 		a, err = selectExistingApp(appEnv)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 	}
 
 	if a.ClientId == "" || a.ClientSecret == "" {
-		return nil, fmt.Errorf("Error creating app, client ID or client Secret are empty")
+		return nil, nil, fmt.Errorf("Error creating app, client ID or client Secret are empty")
 	}
 
 	appEnv.ClientId = a.ClientId
 	appEnv.ClientSecret = a.ClientSecret
 
 	appEnv.Store()
-	a.UpdateAppUris(host)
 
-	logger.Infof("App configured successfully. Client ID: " + appEnv.ClientId)
+	logger.Infof("App configured successfully. Client ID: %s", appEnv.ClientId)
 
-	return a, nil
+	return a, appEnv, nil
 }
 
 func selectExistingApp(e *app.AppEnv) (*app.Application, error) {

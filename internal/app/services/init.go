@@ -10,7 +10,7 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-const noteTemplateRepo = "https://github.com/riseact/riseact-app-template-node.git"
+const nodeTemplateRepo = "https://github.com/riseact/riseact-app-template-node.git"
 const remixTemplateRepo = "https://github.com/riseact/riseact-app-template-remix.git"
 
 type AppData struct {
@@ -88,7 +88,7 @@ func appCloneTemplate(appData *AppData) error {
 	case "Remix":
 		repo = remixTemplateRepo
 	case "Node":
-		repo = noteTemplateRepo
+		repo = nodeTemplateRepo
 	}
 
 	err := git.Clone(repo, appData.path)

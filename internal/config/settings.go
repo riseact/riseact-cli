@@ -19,7 +19,6 @@ type UserSettings struct {
 	Email        string `json:"email" mapstructure:"email"`
 	PartnerID    int    `json:"partner_id" mapstructure:"partner_id"`
 	PartnerName  string `json:"partner_name" mapstructure:"partner_name"`
-	NgrokToken   string `json:"ngrok_token" mapstructure:"ngrok_token"`
 }
 
 type AppSettings struct {
@@ -29,6 +28,18 @@ type AppSettings struct {
 	ClientId     string
 	RedirectUri  string
 	DebugLevel   logrus.Level
+
+	// TunnelControlHost is the frps control channel, reached over WSS on 443.
+	// Empty means dev tunnels are not available in this environment.
+	TunnelControlHost string
+
+	// TunnelZone is the DNS zone tunnels are published under.
+	TunnelZone string
+
+	// TunnelToken is frp's coarse gate. It ships inside this binary, so treat it
+	// as public: riseact-core authorizes each tunnel per application. Rotate it
+	// with each release.
+	TunnelToken string
 }
 
 var production = &AppSettings{
@@ -38,15 +49,10 @@ var production = &AppSettings{
 	RedirectUri:  "http://localhost:55443",
 	ClientId:     "oigtjb908t2i3lnkjvgfjdSFGHY43gk90ufsdfsd",
 	DebugLevel:   logrus.InfoLevel,
-}
 
-var staging = &AppSettings{
-	AccountsHost: "https://accounts.riseact.xyz",
-	CoreHost:     "https://core.riseact.xyz",
-	AdminHost:    "https://admin.riseact.xyz",
-	RedirectUri:  "http://localhost:55443",
-	ClientId:     "oigtjb908t2i3lnkjvgfjdSFGHY43gk90ufsdfsd",
-	DebugLevel:   logrus.DebugLevel,
+	TunnelControlHost: "tunnel.riseact.org",
+	TunnelZone:        "tun.riseact.org",
+	TunnelToken:       "47ebf083c5120c42351416fe36715e1e891db90836ff21afdb4e17256d1f3253",
 }
 
 var development = &AppSettings{
@@ -56,6 +62,10 @@ var development = &AppSettings{
 	RedirectUri:  "http://localhost:55443",
 	ClientId:     "VUpZM6CDKimnGgCSkzxLWsHP60DytxfHeRJXgVA2",
 	DebugLevel:   logrus.DebugLevel,
+
+	// No tunnel: a local riseact-core and a local app are both plain http, so the
+	// iframe can load the app directly and there is nothing to expose publicly.
+	// Leaving TunnelControlHost empty is what selects that path.
 }
 
 func GetAppSettings() *AppSettings {
@@ -63,10 +73,6 @@ func GetAppSettings() *AppSettings {
 
 	if env == "dev" {
 		return development
-	}
-
-	if env == "staging" {
-		return staging
 	}
 
 	return production
@@ -100,7 +106,6 @@ func initDefaultConfig() {
 	viper.SetDefault("email", "")
 	viper.SetDefault("partner_id", 0)
 	viper.SetDefault("partner_name", "")
-	viper.SetDefault("ngrok_token", "")
 
 	viper.AutomaticEnv()
 }
@@ -114,7 +119,6 @@ func GetUserSettings() (*UserSettings, error) {
 		Email:        viper.GetString("email"),
 		PartnerID:    viper.GetInt("partner_id"),
 		PartnerName:  viper.GetString("partner_name"),
-		NgrokToken:   viper.GetString("ngrok_token"),
 	}
 
 	return settings, nil
@@ -128,7 +132,6 @@ func SaveUserSettings(settings *UserSettings) error {
 	viper.Set("email", settings.Email)
 	viper.Set("partner_id", settings.PartnerID)
 	viper.Set("partner_name", settings.PartnerName)
-	viper.Set("ngrok_token", settings.NgrokToken)
 
 	configDir, err := getConfigDirectory()
 
