@@ -62,18 +62,14 @@ func NewTheme(path string) (*Theme, error) {
 
 func (t *Theme) Package(dstDir string) (string, error) {
 	if !t.IsValid() {
-		return "", fmt.Errorf("Not a valid theme folder")
+		return "", fmt.Errorf("not a valid theme folder")
 	}
 
 	if dstDir == "" {
 		dstDir = "."
 	}
 
-	filename := fmt.Sprintf("%s.zip", "theme")
-
-	if dstDir != "." {
-		filename = fmt.Sprintf("%s/%s", dstDir, filename)
-	}
+	filename := filepath.Join(t.Path, "tmp", "theme.zip")
 
 	err := createZipThemePackage(t.Path, filename)
 
@@ -115,10 +111,10 @@ func (t *Theme) Upload(remoteThemeId *int) (int, error) {
 	// create a zip file of the theme
 
 	if !t.IsValid() {
-		return -1, fmt.Errorf("Not a valid theme folder")
+		return -1, fmt.Errorf("not a valid theme folder")
 	}
 
-	filename, err := t.Package("/tmp")
+	filename, err := t.Package(filepath.Join(t.Path, "tmp"))
 
 	if err != nil {
 		return -1, err
@@ -164,6 +160,11 @@ func (t *Theme) Delete() error {
 }
 
 func createZipThemePackage(srcDir string, destZip string) error {
+	// Create the folder to the zip first if needed
+	if err := os.MkdirAll(filepath.Dir(destZip), os.ModePerm); err != nil {
+		return err
+	}
+
 	zipFile, err := os.Create(destZip)
 	if err != nil {
 		return err
@@ -183,7 +184,12 @@ func createZipThemePackage(srcDir string, destZip string) error {
 			return err
 		}
 
-		if relPath == "." || relPath == ".." || relPath == destZip {
+		if relPath == "." || relPath == ".." || relPath == destZip{
+			return nil
+		}
+
+		// Don't add again the zip inside the same zip file
+		if (path == destZip) {
 			return nil
 		}
 
@@ -262,6 +268,8 @@ func uploadFile(filename string, themeId *int, url string) (*ThemeUploadResponse
 		logger.Errorf("Error:\nAsset: %sMessage: %s", themeErr.Asset, themeErr.Error)
 		return nil, fmt.Errorf("upload fallito: %s", resp.Status)
 	}
+
+	logger.Info("File Upload successfully")
 
 	var themeResp ThemeUploadResponse
 
